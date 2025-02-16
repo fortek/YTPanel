@@ -11,79 +11,93 @@ interface AccountList {
 interface AccountListsContextType {
   lists: AccountList[]
   activeListId: string | null
-  addList: (name: string, accounts: string[]) => void
+  addList: (name: string, accounts: string[]) => Promise<void>
   setActiveList: (id: string | null) => void
-  removeList: (id: string) => void
+  removeList: (id: string) => Promise<void>
+  isLoading: boolean
+  error: string | null
 }
-
-const STORAGE_KEY = "youtube_account_lists"
-const ACTIVE_LIST_KEY = "youtube_active_list"
 
 const AccountListsContext = createContext<AccountListsContextType | undefined>(undefined)
 
-function loadLists(): AccountList[] {
-  try {
-    const savedLists = localStorage.getItem(STORAGE_KEY)
-    if (!savedLists) return []
-    
-    const parsedLists = JSON.parse(savedLists)
-    return parsedLists.map((list: any) => ({
-      ...list,
-      createdAt: new Date(list.createdAt)
-    }))
-  } catch (error) {
-    console.error("Error loading lists:", error)
-    return []
-  }
-}
-
-function loadActiveListId(): string | null {
-  try {
-    return localStorage.getItem(ACTIVE_LIST_KEY)
-  } catch {
-    return null
-  }
-}
+const ACTIVE_LIST_KEY = "youtube_active_list"
 
 export function AccountListsProvider({ children }: { children: ReactNode }) {
-  const [lists, setLists] = useState<AccountList[]>(() => loadLists())
-  const [activeListId, setActiveListId] = useState<string | null>(() => loadActiveListId())
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(lists))
-    } catch (error) {
-      console.error("Error saving lists:", error)
+  const [lists, setLists] = useState<AccountList[]>([])
+  const [activeListId, setActiveListId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(ACTIVE_LIST_KEY)
     }
-  }, [lists])
+    return null
+  })
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    try {
-      if (activeListId) {
-        localStorage.setItem(ACTIVE_LIST_KEY, activeListId)
-      } else {
-        localStorage.removeItem(ACTIVE_LIST_KEY)
-      }
-    } catch (error) {
-      console.error("Error saving active list:", error)
+    loadLists()
+  }, [])
+
+  useEffect(() => {
+    if (activeListId) {
+      localStorage.setItem(ACTIVE_LIST_KEY, activeListId)
+    } else {
+      localStorage.removeItem(ACTIVE_LIST_KEY)
     }
   }, [activeListId])
 
-  const addList = (name: string, accounts: string[]) => {
-    const newList = {
-      id: Date.now().toString(),
-      name,
-      accounts,
-      createdAt: new Date()
+  const loadLists = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch("/api/lists")
+      if (!response.ok) throw new Error("Failed to load lists")
+      
+      const data = await response.json()
+      setLists(data.map((list: any) => ({
+        ...list,
+        createdAt: new Date(list.createdAt)
+      })))
+    } catch (error) {
+      setError("Failed to load account lists")
+      console.error("Error loading lists:", error)
+    } finally {
+      setIsLoading(false)
     }
-    setLists(prev => [...prev, newList])
-    setActiveListId(newList.id)
   }
 
-  const removeList = (id: string) => {
-    setLists(prev => prev.filter(list => list.id !== id))
-    if (activeListId === id) {
-      setActiveListId(null)
+  const addList = async (name: string, accounts: string[]) => {
+    try {
+      const response = await fetch("/api/lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, accounts })
+      })
+
+      if (!response.ok) throw new Error("Failed to create list")
+      
+      const newList = await response.json()
+      setLists(prev => [...prev, { ...newList, createdAt: new Date(newList.createdAt) }])
+      setActiveListId(newList.id)
+    } catch (error) {
+      console.error("Error adding list:", error)
+      throw error
+    }
+  }
+
+  const removeList = async (id: string) => {
+    try {
+      const response = await fetch(`/api/lists/${id}`, {
+        method: "DELETE"
+      })
+
+      if (!response.ok) throw new Error("Failed to delete list")
+
+      setLists(prev => prev.filter(list => list.id !== id))
+      if (activeListId === id) {
+        setActiveListId(null)
+      }
+    } catch (error) {
+      console.error("Error removing list:", error)
+      throw error
     }
   }
 
@@ -94,7 +108,9 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
         activeListId, 
         addList, 
         setActiveList: setActiveListId,
-        removeList 
+        removeList,
+        isLoading,
+        error
       }}
     >
       {children}
