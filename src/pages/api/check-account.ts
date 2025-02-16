@@ -22,10 +22,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const html = await response.text()
     
-    const isValid = response.ok && response.status === 200
-    
     let email = ""
-    if (isValid) {
+    if (response.ok && response.status === 200) {
       const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/
       const match = html.match(emailRegex)
       
@@ -34,7 +32,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Log response for debugging
+    const isValid = response.ok && response.status === 200 && email !== ""
+
     console.log("Account check result:", { 
       isValid, 
       email,

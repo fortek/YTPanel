@@ -48,12 +48,12 @@ export function AccountsList({ accounts }: AccountsListProps) {
       if (!account) return
 
       const result = await accountService.checkAccount(account.cookies)
-
+      
       setAccountsState(prev =>
         prev.map(acc =>
           acc.id === id ? {
             ...acc,
-            status: result.isValid ? "valid" : "invalid",
+            status: result.isValid && result.email ? "valid" : "invalid",
             email: result.email
           } : acc
         )
@@ -64,17 +64,6 @@ export function AccountsList({ accounts }: AccountsListProps) {
           acc.id === id ? { ...acc, status: "invalid" } : acc
         )
       )
-    }
-  }
-
-  const getStatusColor = (status: Account["status"]) => {
-    switch (status) {
-      case "valid":
-        return "text-green-500"
-      case "invalid":
-        return "text-red-500"
-      default:
-        return "text-gray-500"
     }
   }
 
