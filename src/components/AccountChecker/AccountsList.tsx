@@ -79,29 +79,41 @@ export function AccountsList({ accounts }: AccountsListProps) {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto mt-8">
+    <Card className="w-full max-w-4xl mx-auto mt-8">
       <CardHeader>
         <CardTitle>Accounts List ({accountsState.length})</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Account ID</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead className="w-[200px]">Account ID</TableHead>
+              <TableHead className="w-[300px]">Email</TableHead>
+              <TableHead className="w-[100px]">Status</TableHead>
+              <TableHead className="w-[120px] text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {accountsState.map((account) => (
               <TableRow key={account.id}>
-                <TableCell className="font-mono text-sm">{account.displayId}</TableCell>
-                <TableCell className="font-mono text-sm">
+                <TableCell className="font-mono text-sm truncate max-w-[200px]">
+                  {account.displayId}
+                </TableCell>
+                <TableCell className="font-mono text-sm truncate max-w-[300px]">
                   {account.email || "-"}
                 </TableCell>
-                <TableCell className={getStatusColor(account.status)}>
-                  {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    account.status === "valid" 
+                      ? "bg-green-100 text-green-700" 
+                      : account.status === "invalid"
+                      ? "bg-red-100 text-red-700"
+                      : account.status === "checking"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}>
+                    {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
+                  </span>
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
@@ -109,13 +121,14 @@ export function AccountsList({ accounts }: AccountsListProps) {
                     variant={account.status === "valid" ? "outline" : "default"}
                     onClick={() => checkAccount(account.id)}
                     disabled={account.status === "checking"}
+                    className="w-[100px]"
                   >
                     {account.status === "checking" ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     ) : (
-                      <Check className="w-4 h-4" />
+                      <Check className="w-4 h-4 mr-2" />
                     )}
-                    <span className="ml-2">Check</span>
+                    Check
                   </Button>
                 </TableCell>
               </TableRow>
