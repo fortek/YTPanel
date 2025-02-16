@@ -4,6 +4,7 @@ import fs from "fs"
 import path from "path"
 
 const LISTS_DIR = path.join(process.cwd(), "data", "lists")
+const METADATA_FILE = path.join(LISTS_DIR, "metadata.json")
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query
@@ -22,13 +23,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 async function deleteList(id: string, res: NextApiResponse) {
   try {
-    const filePath = path.join(LISTS_DIR, `${id}.json`)
+    const accountsPath = path.join(LISTS_DIR, `${id}.txt`)
     
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: "List not found" })
+    // Delete accounts file if exists
+    if (fs.existsSync(accountsPath)) {
+      fs.unlinkSync(accountsPath)
     }
 
-    fs.unlinkSync(filePath)
+    // Update metadata
+    const metadata = JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"))
+    const updatedMetadata = metadata.filter((list: any) => list.id !== id)
+    fs.writeFileSync(METADATA_FILE, JSON.stringify(updatedMetadata, null, 2))
+
     return res.status(200).json({ success: true })
   } catch (error) {
     console.error("Error deleting list:", error)
