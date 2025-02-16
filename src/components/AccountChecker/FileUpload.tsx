@@ -2,28 +2,32 @@
 import { ChangeEvent, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Upload } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useAccountLists } from "@/contexts/AccountListsContext"
 
-interface FileUploadProps {
-  onAccountsLoad: (accounts: string[]) => void
-}
-
-export function FileUpload({ onAccountsLoad }: FileUploadProps) {
+export function FileUpload() {
+  const { addList } = useAccountLists()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [listName, setListName] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     setError(null)
     if (!e.target.files?.length) return
+    if (!listName.trim()) {
+      setError("Please enter a name for the list")
+      return
+    }
 
     setIsLoading(true)
     try {
       const file = e.target.files[0]
       const text = await file.text()
       
-      // Parse cookies format
       const accounts = text
         .split("\n")
         .filter(line => line.trim().length > 0)
@@ -39,28 +43,20 @@ export function FileUpload({ onAccountsLoad }: FileUploadProps) {
             
             if (relevantCookies.length < 2) return null
 
-            // Get a readable identifier from cookies
-            const sidCookie = relevantCookies.find(c => c.includes("SID="))
-            const displayId = sidCookie 
-              ? sidCookie.split("=")[1].substring(0, 15) + "..."
-              : "Unknown Account"
-
-            return {
-              cookies: line.trim(),
-              displayId
-            }
+            return line.trim()
           } catch {
             return null
           }
         })
-        .filter((account): account is { cookies: string; displayId: string } => account !== null)
+        .filter((account): account is string => account !== null)
 
       if (accounts.length === 0) {
         setError("No valid YouTube cookies found in the file. Please check the format.")
         return
       }
 
-      onAccountsLoad(accounts.map(acc => acc.cookies))
+      addList(listName, accounts)
+      setListName("")
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
@@ -81,6 +77,17 @@ export function FileUpload({ onAccountsLoad }: FileUploadProps) {
         <CardTitle className="text-center">Upload YouTube Accounts</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="listName">List Name</Label>
+          <Input
+            id="listName"
+            value={listName}
+            onChange={(e) => setListName(e.target.value)}
+            placeholder="Enter a name for this list"
+            required
+          />
+        </div>
+
         <input
           type="file"
           ref={fileInputRef}
