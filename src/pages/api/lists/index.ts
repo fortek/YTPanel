@@ -5,18 +5,23 @@ import path from "path"
 
 const LISTS_DIR = path.join(process.cwd(), "data", "lists")
 
-if (!fs.existsSync(LISTS_DIR)) {
-  fs.mkdirSync(LISTS_DIR, { recursive: true })
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  switch (req.method) {
-    case "GET":
-      return getLists(req, res)
-    case "POST":
-      return createList(req, res)
-    default:
-      return res.status(405).json({ error: "Method not allowed" })
+  try {
+    if (!fs.existsSync(LISTS_DIR)) {
+      fs.mkdirSync(LISTS_DIR, { recursive: true })
+    }
+
+    switch (req.method) {
+      case "GET":
+        return getLists(req, res)
+      case "POST":
+        return createList(req, res)
+      default:
+        return res.status(405).json({ error: "Method not allowed" })
+    }
+  } catch (error) {
+    console.error("Error accessing lists directory:", error)
+    return res.status(500).json({ error: "Server configuration error" })
   }
 }
 
@@ -45,17 +50,16 @@ async function createList(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: "Name and accounts are required" })
     }
 
+    const listId = Date.now().toString()
     const list = {
-      id: Date.now().toString(),
+      id: listId,
       name,
       accounts,
       createdAt: new Date().toISOString()
     }
 
-    fs.writeFileSync(
-      path.join(LISTS_DIR, `${list.id}.json`),
-      JSON.stringify(list, null, 2)
-    )
+    const filePath = path.join(LISTS_DIR, `${listId}.json`)
+    fs.writeFileSync(filePath, JSON.stringify(list, null, 2))
 
     return res.status(201).json(list)
   } catch (error) {
