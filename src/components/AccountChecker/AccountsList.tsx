@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Check, Loader2 } from "lucide-react"
+import { accountService } from "@/services/accountService"
 
 interface Account {
   id: number
@@ -44,9 +45,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
       const account = accountsState.find(acc => acc.id === id)
       if (!account) return
 
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      const isValid = Math.random() > 0.5
+      const isValid = await accountService.checkAccount(account.cookies)
 
       setAccountsState(prev =>
         prev.map(acc =>
