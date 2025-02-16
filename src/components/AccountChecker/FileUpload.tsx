@@ -26,24 +26,41 @@ export function FileUpload({ onAccountsLoad }: FileUploadProps) {
       // Parse cookies format
       const accounts = text
         .split("\n")
-        .filter(line => line.includes(".youtube.com"))
+        .filter(line => line.trim().length > 0)
         .map(line => {
           try {
-            const cookieParts = line.split("\t")
-            if (cookieParts.length < 7) return null
-            return cookieParts.join(" | ")
+            const cookies = line.split(";")
+            const relevantCookies = cookies.filter(cookie => 
+              cookie.includes("SID") || 
+              cookie.includes("HSID") || 
+              cookie.includes("SSID") ||
+              cookie.includes("LOGIN_INFO")
+            )
+            
+            if (relevantCookies.length < 2) return null
+
+            // Get a readable identifier from cookies
+            const sidCookie = relevantCookies.find(c => c.includes("SID="))
+            const displayId = sidCookie 
+              ? sidCookie.split("=")[1].substring(0, 15) + "..."
+              : "Unknown Account"
+
+            return {
+              cookies: line.trim(),
+              displayId
+            }
           } catch {
             return null
           }
         })
-        .filter((account): account is string => account !== null)
+        .filter((account): account is { cookies: string; displayId: string } => account !== null)
 
       if (accounts.length === 0) {
-        setError("No valid YouTube accounts found in the file. Please check the file format.")
+        setError("No valid YouTube cookies found in the file. Please check the format.")
         return
       }
 
-      onAccountsLoad(accounts)
+      onAccountsLoad(accounts.map(acc => acc.cookies))
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }

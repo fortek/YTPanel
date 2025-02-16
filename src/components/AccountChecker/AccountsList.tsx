@@ -7,7 +7,8 @@ import { Check, Loader2 } from "lucide-react"
 
 interface Account {
   id: number
-  username: string
+  cookies: string
+  displayId: string
   status: "pending" | "checking" | "valid" | "invalid"
 }
 
@@ -17,11 +18,19 @@ interface AccountsListProps {
 
 export function AccountsList({ accounts }: AccountsListProps) {
   const [accountsState, setAccountsState] = useState<Account[]>(
-    accounts.map((acc, index) => ({
-      id: index,
-      username: acc,
-      status: "pending"
-    }))
+    accounts.map((cookies, index) => {
+      const sidCookie = cookies.split(";").find(c => c.includes("SID="))
+      const displayId = sidCookie 
+        ? sidCookie.split("=")[1].substring(0, 15) + "..."
+        : `Account ${index + 1}`
+
+      return {
+        id: index,
+        cookies,
+        displayId,
+        status: "pending"
+      }
+    })
   )
 
   const checkAccount = async (id: number) => {
@@ -31,14 +40,26 @@ export function AccountsList({ accounts }: AccountsListProps) {
       )
     )
 
-    // Simulate checking (replace with actual API call)
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      const account = accountsState.find(acc => acc.id === id)
+      if (!account) return
 
-    setAccountsState(prev =>
-      prev.map(acc =>
-        acc.id === id ? { ...acc, status: Math.random() > 0.5 ? "valid" : "invalid" } : acc
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      const isValid = Math.random() > 0.5
+
+      setAccountsState(prev =>
+        prev.map(acc =>
+          acc.id === id ? { ...acc, status: isValid ? "valid" : "invalid" } : acc
+        )
       )
-    )
+    } catch (error) {
+      setAccountsState(prev =>
+        prev.map(acc =>
+          acc.id === id ? { ...acc, status: "invalid" } : acc
+        )
+      )
+    }
   }
 
   const getStatusColor = (status: Account["status"]) => {
@@ -55,13 +76,13 @@ export function AccountsList({ accounts }: AccountsListProps) {
   return (
     <Card className="w-full max-w-2xl mx-auto mt-8">
       <CardHeader>
-        <CardTitle>Accounts List</CardTitle>
+        <CardTitle>Accounts List ({accountsState.length})</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Username</TableHead>
+              <TableHead>Account ID</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -69,13 +90,14 @@ export function AccountsList({ accounts }: AccountsListProps) {
           <TableBody>
             {accountsState.map((account) => (
               <TableRow key={account.id}>
-                <TableCell>{account.username}</TableCell>
+                <TableCell className="font-mono text-sm">{account.displayId}</TableCell>
                 <TableCell className={getStatusColor(account.status)}>
                   {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
                     size="sm"
+                    variant={account.status === "valid" ? "outline" : "default"}
                     onClick={() => checkAccount(account.id)}
                     disabled={account.status === "checking"}
                   >
