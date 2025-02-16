@@ -20,13 +20,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(405).json({ error: "Method not allowed" })
     }
   } catch (error) {
-    console.error("Error accessing lists directory:", error)
-    return res.status(500).json({ error: "Server configuration error" })
+    console.error("Error in lists handler:", error)
+    return res.status(500).json({ 
+      error: "Server configuration error",
+      details: error instanceof Error ? error.message : "Unknown error"
+    })
   }
 }
 
 async function getLists(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (!fs.existsSync(LISTS_DIR)) {
+      return res.status(200).json([])
+    }
+
     const files = fs.readdirSync(LISTS_DIR)
     const lists = files
       .filter(file => file.endsWith(".json"))
@@ -50,6 +57,10 @@ async function createList(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: "Name and accounts are required" })
     }
 
+    if (!fs.existsSync(LISTS_DIR)) {
+      fs.mkdirSync(LISTS_DIR, { recursive: true })
+    }
+
     const listId = Date.now().toString()
     const list = {
       id: listId,
@@ -64,6 +75,9 @@ async function createList(req: NextApiRequest, res: NextApiResponse) {
     return res.status(201).json(list)
   } catch (error) {
     console.error("Error creating list:", error)
-    return res.status(500).json({ error: "Failed to create list" })
+    return res.status(500).json({ 
+      error: "Failed to create list",
+      details: error instanceof Error ? error.message : "Unknown error"
+    })
   }
 }
