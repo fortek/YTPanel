@@ -1,6 +1,11 @@
 
+interface CheckAccountResponse {
+  isValid: boolean
+  email: string
+}
+
 export const accountService = {
-  async checkAccount(cookies: string): Promise<boolean> {
+  async checkAccount(cookies: string): Promise<CheckAccountResponse> {
     try {
       const response = await fetch("/api/check-account", {
         method: "POST",
@@ -15,7 +20,10 @@ export const accountService = {
       }
 
       const data = await response.json()
-      return data.isValid
+      return {
+        isValid: data.isValid,
+        email: data.email
+      }
     } catch (error) {
       console.error("Error checking account:", error)
       throw error

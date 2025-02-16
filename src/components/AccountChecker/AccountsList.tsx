@@ -10,6 +10,7 @@ interface Account {
   id: number
   cookies: string
   displayId: string
+  email: string
   status: "pending" | "checking" | "valid" | "invalid"
 }
 
@@ -29,6 +30,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
         id: index,
         cookies,
         displayId,
+        email: "",
         status: "pending"
       }
     })
@@ -45,11 +47,15 @@ export function AccountsList({ accounts }: AccountsListProps) {
       const account = accountsState.find(acc => acc.id === id)
       if (!account) return
 
-      const isValid = await accountService.checkAccount(account.cookies)
+      const result = await accountService.checkAccount(account.cookies)
 
       setAccountsState(prev =>
         prev.map(acc =>
-          acc.id === id ? { ...acc, status: isValid ? "valid" : "invalid" } : acc
+          acc.id === id ? {
+            ...acc,
+            status: result.isValid ? "valid" : "invalid",
+            email: result.email
+          } : acc
         )
       )
     } catch (error) {
@@ -82,6 +88,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Account ID</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -90,6 +97,9 @@ export function AccountsList({ accounts }: AccountsListProps) {
             {accountsState.map((account) => (
               <TableRow key={account.id}>
                 <TableCell className="font-mono text-sm">{account.displayId}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {account.email || "-"}
+                </TableCell>
                 <TableCell className={getStatusColor(account.status)}>
                   {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
                 </TableCell>
