@@ -3,6 +3,15 @@ import { NextApiRequest, NextApiResponse } from "next"
 import fs from "fs"
 import path from "path"
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb'
+    },
+    responseLimit: false
+  }
+}
+
 const LISTS_DIR = path.join(process.cwd(), "data", "lists")
 const METADATA_FILE = path.join(LISTS_DIR, "metadata.json")
 
@@ -75,15 +84,12 @@ async function createList(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-      // Ensure directory exists
       if (!fs.existsSync(LISTS_DIR)) {
         fs.mkdirSync(LISTS_DIR, { recursive: true })
       }
 
-      // Save accounts to file
       fs.writeFileSync(accountsPath, accounts.join("\n"), "utf-8")
 
-      // Update metadata
       const metadata = JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"))
       metadata.push(list)
       fs.writeFileSync(METADATA_FILE, JSON.stringify(metadata, null, 2))
