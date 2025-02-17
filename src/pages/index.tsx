@@ -1,5 +1,5 @@
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import Head from "next/head"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
@@ -14,16 +14,23 @@ export default function Home() {
   const { isAuthenticated, logout } = useAuth()
   const { lists, activeListId, isLoading } = useAccountLists()
   const router = useRouter()
+  const [isLoading2, setIsLoading2] = useState(true)
 
   const activeList = lists.find(list => list.id === activeListId)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/auth/login")
+    const checkAuth = async () => {
+      const authStatus = localStorage.getItem("youtube_checker_auth")
+      if (authStatus !== "true") {
+        router.push("/auth/login")
+      } else {
+        setIsLoading2(false)
+      }
     }
-  }, [isAuthenticated, router])
+    checkAuth()
+  }, [router])
 
-  if (!isAuthenticated) {
+  if (isLoading2) {
     return null
   }
 

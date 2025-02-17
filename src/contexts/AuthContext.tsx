@@ -20,8 +20,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const authStatus = localStorage.getItem(AUTH_KEY)
     if (authStatus === "true") {
       setIsAuthenticated(true)
+    } else if (router.pathname !== "/auth/login") {
+      router.push("/auth/login")
     }
-  }, [])
+  }, [router.pathname])
 
   const login = async (username: string, password: string) => {
     if (username === "ling" && password === "fort2007") {
