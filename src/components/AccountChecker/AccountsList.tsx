@@ -3,7 +3,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Check, Loader2 } from "lucide-react"
+import { Check, Loader2, Play } from "lucide-react"
 import { accountService } from "@/services/accountService"
 
 interface Account {
@@ -35,6 +35,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
       }
     })
   )
+  const [isCheckingAll, setIsCheckingAll] = useState(false)
 
   const checkAccount = async (id: number) => {
     setAccountsState(prev =>
@@ -67,10 +68,42 @@ export function AccountsList({ accounts }: AccountsListProps) {
     }
   }
 
+  const checkAllAccounts = async () => {
+    setIsCheckingAll(true)
+    const pendingAccounts = accountsState.filter(acc => acc.status === "pending" || acc.status === "invalid")
+    
+    for (const account of pendingAccounts) {
+      await checkAccount(account.id)
+    }
+    
+    setIsCheckingAll(false)
+  }
+
+  const pendingCount = accountsState.filter(acc => acc.status === "pending").length
+  const validCount = accountsState.filter(acc => acc.status === "valid").length
+  const invalidCount = accountsState.filter(acc => acc.status === "invalid").length
+
   return (
     <Card className="w-full max-w-4xl mx-auto mt-8">
-      <CardHeader>
-        <CardTitle>Accounts List ({accountsState.length})</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Accounts List ({accountsState.length})</CardTitle>
+          <div className="mt-2 text-sm text-muted-foreground">
+            Valid: {validCount} · Invalid: {invalidCount} · Pending: {pendingCount}
+          </div>
+        </div>
+        <Button
+          onClick={checkAllAccounts}
+          disabled={isCheckingAll || pendingCount === 0}
+          className="ml-4"
+        >
+          {isCheckingAll ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Play className="w-4 h-4 mr-2" />
+          )}
+          Check All
+        </Button>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
@@ -109,7 +142,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
                     size="sm"
                     variant={account.status === "valid" ? "outline" : "default"}
                     onClick={() => checkAccount(account.id)}
-                    disabled={account.status === "checking"}
+                    disabled={account.status === "checking" || isCheckingAll}
                     className="w-[100px]"
                   >
                     {account.status === "checking" ? (
