@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import Head from "next/head"
-import { FileUpload } from "@/components/AccountChecker/FileUpload"
 import { AccountsList } from "@/components/AccountChecker/AccountsList"
 import { Sidebar } from "@/components/AccountChecker/Sidebar"
 import { useAuth } from "@/contexts/AuthContext"
@@ -62,8 +61,6 @@ export default function Home() {
                 Logout
               </Button>
             </div>
-            
-            <FileUpload />
             
             {activeList && activeList.accounts && activeList.accounts.length > 0 && (
               <AccountsList accounts={activeList.accounts} key={activeList.id} />

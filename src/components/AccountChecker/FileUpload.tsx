@@ -1,7 +1,7 @@
 
 import { ChangeEvent, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload } from "lucide-react"
@@ -72,45 +72,40 @@ export function FileUpload() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-center">Upload YouTube Accounts</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="listName">List Name</Label>
-          <Input
-            id="listName"
-            value={listName}
-            onChange={(e) => setListName(e.target.value)}
-            placeholder="Enter a name for this list"
-            required
-          />
-        </div>
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileUpload}
-          accept=".txt"
-          className="hidden"
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="listName">List Name</Label>
+        <Input
+          id="listName"
+          value={listName}
+          onChange={(e) => setListName(e.target.value)}
+          placeholder="Enter a name for this list"
+          required
         />
-        
-        <Button 
-          onClick={handleButtonClick}
-          disabled={isLoading}
-          className="w-full"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          {isLoading ? "Processing..." : "Upload Cookies File"}
-        </Button>
+      </div>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept=".txt"
+        className="hidden"
+      />
+      
+      <Button 
+        onClick={handleButtonClick}
+        disabled={isLoading}
+        className="w-full"
+      >
+        <Upload className="w-4 h-4 mr-2" />
+        {isLoading ? "Processing..." : "Upload Cookies File"}
+      </Button>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+    </div>
   )
 }

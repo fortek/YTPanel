@@ -5,30 +5,30 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAccountLists } from "@/contexts/AccountListsContext"
 import { formatDistanceToNow } from "date-fns"
 import { Trash2 } from "lucide-react"
+import { FileUpload } from "@/components/AccountChecker/FileUpload"
 
 export function Sidebar() {
   const { lists, activeListId, setActiveList, removeList } = useAccountLists()
-
-  if (lists.length === 0) {
-    return null
-  }
 
   const handleListSelect = (id: string) => {
     setActiveList(id)
   }
 
   return (
-    <div className="pb-12 w-64 border-r">
-      <div className="space-y-4 py-4">
+    <div className="pb-12 w-80 border-r flex flex-col h-screen">
+      <div className="p-4 border-b">
+        <FileUpload />
+      </div>
+      <div className="flex-1 overflow-hidden">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold">Account Lists</h2>
-          <ScrollArea className="h-[calc(100vh-10rem)]">
+          <ScrollArea className="h-[calc(100vh-20rem)]">
             <div className="space-y-1">
               {lists.map((list) => (
                 <div
                   key={list.id}
                   className={cn(
-                    "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                    "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer group",
                     activeListId === list.id && "bg-accent"
                   )}
                   onClick={() => handleListSelect(list.id)}
