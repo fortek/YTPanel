@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { useRouter } from "next/router"
 
 interface AuthContextType {
@@ -10,13 +10,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const AUTH_KEY = "youtube_checker_auth"
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
 
+  useEffect(() => {
+    const authStatus = localStorage.getItem(AUTH_KEY)
+    if (authStatus === "true") {
+      setIsAuthenticated(true)
+    }
+  }, [])
+
   const login = async (username: string, password: string) => {
     if (username === "ling" && password === "fort2007") {
       setIsAuthenticated(true)
+      localStorage.setItem(AUTH_KEY, "true")
       return true
     }
     return false
@@ -24,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setIsAuthenticated(false)
+    localStorage.removeItem(AUTH_KEY)
     router.push("/auth/login")
   }
 

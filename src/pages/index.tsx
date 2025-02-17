@@ -59,7 +59,7 @@ export default function Home() {
             <FileUpload />
             
             {activeList && activeList.accounts && activeList.accounts.length > 0 && (
-              <AccountsList accounts={activeList.accounts} />
+              <AccountsList accounts={activeList.accounts} key={activeList.id} />
             )}
           </div>
         </main>

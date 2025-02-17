@@ -13,8 +13,12 @@ export function Sidebar() {
     return null
   }
 
+  const handleListSelect = (id: string) => {
+    setActiveList(id)
+  }
+
   return (
-    <div className="pb-12 w-64">
+    <div className="pb-12 w-64 border-r">
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold">Account Lists</h2>
@@ -24,24 +28,25 @@ export function Sidebar() {
                 <div
                   key={list.id}
                   className={cn(
-                    "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground",
+                    "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer",
                     activeListId === list.id && "bg-accent"
                   )}
+                  onClick={() => handleListSelect(list.id)}
                 >
-                  <button
-                    onClick={() => setActiveList(list.id)}
-                    className="flex-1 text-left"
-                  >
+                  <div className="flex-1">
                     <div className="font-medium">{list.name}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatDistanceToNow(list.createdAt, { addSuffix: true })}
                     </div>
-                  </button>
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => removeList(list.id)}
-                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeList(list.id)
+                    }}
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
