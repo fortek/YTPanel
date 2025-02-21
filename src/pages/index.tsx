@@ -9,29 +9,13 @@ import { useAccountLists } from "@/contexts/AccountListsContext"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
 
-interface Account {
-  id: string;
-  login?: string;
-  password?: string;
-  cookies?: string;
-  status: "pending" | "valid" | "invalid";
-  serviceType: "youtube" | "vk";
-}
-
-interface List {
-  id: string;
-  name: string;
-  serviceType: "youtube" | "vk";
-  accounts: Account[];
-}
-
 export default function Home() {
   const { isAuthenticated, logout } = useAuth()
-  const { lists, activeListId, setActiveListId, isLoading } = useAccountLists()
+  const { lists, activeListId, isLoading } = useAccountLists()
   const router = useRouter()
   const [isLoading2, setIsLoading2] = useState(true)
 
-  const activeList = lists.find(list => list.id === activeListId) as List | undefined
+  const activeList = lists.find(list => list.id === activeListId)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -45,20 +29,6 @@ export default function Home() {
     checkAuth()
   }, [router])
 
-  const handleListSelect = (listId: string) => {
-    setActiveListId(listId)
-  }
-
-  const handleCheckAccount = async (accountId: string) => {
-    // Implement account checking logic
-    console.log("Checking account:", accountId)
-  }
-
-  const handleCheckAll = async () => {
-    // Implement check all logic
-    console.log("Checking all accounts")
-  }
-
   if (isLoading2) {
     return null
   }
@@ -66,27 +36,23 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Account Checker</title>
-        <meta name="description" content="Check account status for various services" />
+        <title>YouTube Account Checker</title>
+        <meta name="description" content="Check YouTube accounts status" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
       <div className="flex h-screen">
-        <Sidebar 
-          lists={lists}
-          activeListId={activeListId}
-          onListSelect={handleListSelect}
-        />
+        <Sidebar />
         <main className="flex-1 overflow-y-auto">
           <div className="container py-8 px-4">
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h1 className="text-3xl font-bold">
-                  Account Checker
+                  YouTube Account Checker
                 </h1>
                 {activeList && (
                   <p className="text-muted-foreground mt-2">
-                    Current list: {activeList.name} ({activeList.serviceType})
+                    Current list: {activeList.name}
                   </p>
                 )}
               </div>
@@ -97,13 +63,7 @@ export default function Home() {
             </div>
             
             {activeList && activeList.accounts && activeList.accounts.length > 0 && (
-              <AccountsList 
-                accounts={activeList.accounts}
-                onCheckAccount={handleCheckAccount}
-                onCheckAll={handleCheckAll}
-                title={`${activeList.serviceType.toUpperCase()} Accounts`}
-                serviceType={activeList.serviceType}
-              />
+              <AccountsList accounts={activeList.accounts} key={activeList.id} />
             )}
           </div>
         </main>

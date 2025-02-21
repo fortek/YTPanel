@@ -1,97 +1,163 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Check, Loader2, Play } from "lucide-react"
+import { accountService } from "@/services/accountService"
 
 interface Account {
-  id: string;
-  login?: string;
-  password?: string;
-  cookies?: string;
-  status: "pending" | "valid" | "invalid";
-  serviceType: "youtube" | "vk";
+  id: number
+  cookies: string
+  displayId: string
+  email: string
+  status: "pending" | "checking" | "valid" | "invalid"
 }
 
 interface AccountsListProps {
-  accounts: Account[];
-  onCheckAccount: (accountId: string) => Promise<void>;
-  onCheckAll: () => Promise<void>;
-  title: string;
-  serviceType: "youtube" | "vk";
+  accounts: string[]
 }
 
-export const AccountsList = ({ 
-  accounts, 
-  onCheckAccount, 
-  onCheckAll, 
-  title,
-  serviceType 
-}: AccountsListProps) => {
-  const [checking, setChecking] = useState<string[]>([]);
+export function AccountsList({ accounts }: AccountsListProps) {
+  const [accountsState, setAccountsState] = useState<Account[]>(
+    accounts.map((cookies, index) => {
+      const sidCookie = cookies.split(";").find(c => c.includes("SID="))
+      const displayId = sidCookie 
+        ? sidCookie.split("=")[1].substring(0, 15) + "..."
+        : `Account ${index + 1}`
 
-  const handleCheck = async (accountId: string) => {
-    setChecking(prev => [...prev, accountId]);
-    await onCheckAccount(accountId);
-    setChecking(prev => prev.filter(id => id !== accountId));
-  };
+      return {
+        id: index,
+        cookies,
+        displayId,
+        email: "",
+        status: "pending"
+      }
+    })
+  )
+  const [isCheckingAll, setIsCheckingAll] = useState(false)
 
-  const handleCheckAll = async () => {
-    await onCheckAll();
-  };
+  const checkAccount = async (id: number) => {
+    setAccountsState(prev =>
+      prev.map(acc =>
+        acc.id === id ? { ...acc, status: "checking" } : acc
+      )
+    )
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "valid": return "bg-green-500";
-      case "invalid": return "bg-red-500";
-      default: return "bg-yellow-500";
+    try {
+      const account = accountsState.find(acc => acc.id === id)
+      if (!account) return
+
+      const result = await accountService.checkAccount(account.cookies)
+      
+      setAccountsState(prev =>
+        prev.map(acc =>
+          acc.id === id ? {
+            ...acc,
+            status: result.isValid && result.email ? "valid" : "invalid",
+            email: result.email
+          } : acc
+        )
+      )
+    } catch (error) {
+      setAccountsState(prev =>
+        prev.map(acc =>
+          acc.id === id ? { ...acc, status: "invalid" } : acc
+        )
+      )
     }
-  };
+  }
+
+  const checkAllAccounts = async () => {
+    setIsCheckingAll(true)
+    const pendingAccounts = accountsState.filter(acc => acc.status === "pending" || acc.status === "invalid")
+    
+    for (const account of pendingAccounts) {
+      await checkAccount(account.id)
+    }
+    
+    setIsCheckingAll(false)
+  }
+
+  const pendingCount = accountsState.filter(acc => acc.status === "pending").length
+  const validCount = accountsState.filter(acc => acc.status === "valid").length
+  const invalidCount = accountsState.filter(acc => acc.status === "invalid").length
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-4xl mx-auto mt-8">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{title}</CardTitle>
-        <Button onClick={handleCheckAll}>Check All</Button>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[500px] pr-4">
-          <div className="space-y-4">
-            {accounts.map((account) => (
-              <div key={account.id}>
-                <div className="flex items-center justify-between py-2">
-                  <div className="flex flex-col gap-1">
-                    {serviceType === "vk" ? (
-                      <>
-                        <span className="text-sm font-medium">Login: {account.login}</span>
-                        <span className="text-sm text-gray-500">Password: {account.password}</span>
-                      </>
-                    ) : (
-                      <span className="text-sm font-medium">Cookies: {account.cookies?.substring(0, 30)}...</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={getStatusColor(account.status)}>
-                      {account.status}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCheck(account.id)}
-                      disabled={checking.includes(account.id)}
-                    >
-                      {checking.includes(account.id) ? "Checking..." : "Check"}
-                    </Button>
-                  </div>
-                </div>
-                <Separator />
-              </div>
-            ))}
+        <div>
+          <CardTitle>Accounts List ({accountsState.length})</CardTitle>
+          <div className="mt-2 text-sm text-muted-foreground">
+            Valid: {validCount} · Invalid: {invalidCount} · Pending: {pendingCount}
           </div>
-        </ScrollArea>
+        </div>
+        <Button
+          onClick={checkAllAccounts}
+          disabled={isCheckingAll || pendingCount === 0}
+          className="ml-4"
+        >
+          {isCheckingAll ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Play className="w-4 h-4 mr-2" />
+          )}
+          Check All
+        </Button>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[200px]">Account ID</TableHead>
+              <TableHead className="w-[300px]">Email</TableHead>
+              <TableHead className="w-[100px]">Status</TableHead>
+              <TableHead className="w-[120px] text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {accountsState.map((account) => (
+              <TableRow key={account.id}>
+                <TableCell className="font-mono text-sm truncate max-w-[200px]">
+                  {account.displayId}
+                </TableCell>
+                <TableCell className="font-mono text-sm truncate max-w-[300px]">
+                  {account.email || "-"}
+                </TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    account.status === "valid" 
+                      ? "bg-green-100 text-green-700" 
+                      : account.status === "invalid"
+                      ? "bg-red-100 text-red-700"
+                      : account.status === "checking"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}>
+                    {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    size="sm"
+                    variant={account.status === "valid" ? "outline" : "default"}
+                    onClick={() => checkAccount(account.id)}
+                    disabled={account.status === "checking" || isCheckingAll}
+                    className="w-[100px]"
+                  >
+                    {account.status === "checking" ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Check className="w-4 h-4 mr-2" />
+                    )}
+                    Check
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
-  );
-};
+  )
+}

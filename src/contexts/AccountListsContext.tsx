@@ -1,36 +1,26 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 
-interface Account {
-  id: string;
-  login?: string;
-  password?: string;
-  cookies?: string;
-  status: "pending" | "valid" | "invalid";
-  serviceType: "youtube" | "vk";
-}
-
 interface AccountList {
-  id: string;
-  name: string;
-  serviceType: "youtube" | "vk";
-  accounts: Account[];
-  createdAt: Date;
+  id: string
+  name: string
+  accounts: string[]
+  createdAt: Date
 }
 
 interface AccountListsContextType {
-  lists: AccountList[];
-  activeListId: string | null;
-  setActiveListId: (id: string | null) => void;
-  addList: (name: string, accounts: Account[], serviceType: "youtube" | "vk") => Promise<void>;
-  removeList: (id: string) => Promise<void>;
-  isLoading: boolean;
-  error: string | null;
+  lists: AccountList[]
+  activeListId: string | null
+  addList: (name: string, accounts: string[]) => Promise<void>
+  setActiveList: (id: string | null) => void
+  removeList: (id: string) => Promise<void>
+  isLoading: boolean
+  error: string | null
 }
 
 const AccountListsContext = createContext<AccountListsContextType | undefined>(undefined)
 
-const ACTIVE_LIST_KEY = "account_checker_active_list"
+const ACTIVE_LIST_KEY = "youtube_active_list"
 
 export function AccountListsProvider({ children }: { children: ReactNode }) {
   const [lists, setLists] = useState<AccountList[]>([])
@@ -74,12 +64,12 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const addList = async (name: string, accounts: Account[], serviceType: "youtube" | "vk") => {
+  const addList = async (name: string, accounts: string[]) => {
     try {
       const response = await fetch("/api/lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, accounts, serviceType })
+        body: JSON.stringify({ name, accounts })
       })
 
       if (!response.ok) throw new Error("Failed to create list")
@@ -115,9 +105,9 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     <AccountListsContext.Provider 
       value={{ 
         lists, 
-        activeListId,
-        setActiveListId,
-        addList,
+        activeListId, 
+        addList, 
+        setActiveList: setActiveListId,
         removeList,
         isLoading,
         error
