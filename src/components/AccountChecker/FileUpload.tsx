@@ -1,111 +1,97 @@
 
-import { ChangeEvent, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Upload } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAccountLists } from "@/contexts/AccountListsContext"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
-export function FileUpload() {
-  const { addList } = useAccountLists()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [listName, setListName] = useState("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
+export const FileUpload = () => {
+  const [file, setFile] = useState<File | null>(null);
+  const [serviceType, setServiceType] = useState<"youtube" | "vk">("youtube");
+  const { toast } = useToast();
 
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    setError(null)
-    if (!e.target.files?.length) return
-    if (!listName.trim()) {
-      setError("Please enter a name for the list")
-      return
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast({
+        title: "Error",
+        description: "Please select a file first",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setIsLoading(true)
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("serviceType", serviceType);
+
     try {
-      const file = e.target.files[0]
-      const text = await file.text()
-      
-      const accounts = text
-        .split("\n")
-        .filter(line => line.trim().length > 0)
-        .map(line => {
-          try {
-            const cookies = line.split(";")
-            const relevantCookies = cookies.filter(cookie => 
-              cookie.includes("SID") || 
-              cookie.includes("HSID") || 
-              cookie.includes("SSID") ||
-              cookie.includes("LOGIN_INFO")
-            )
-            
-            if (relevantCookies.length < 2) return null
+      const response = await fetch("/api/lists", {
+        method: "POST",
+        body: formData,
+      });
 
-            return line.trim()
-          } catch {
-            return null
-          }
-        })
-        .filter((account): account is string => account !== null)
+      if (!response.ok) throw new Error("Upload failed");
 
-      if (accounts.length === 0) {
-        setError("No valid YouTube cookies found in the file. Please check the format.")
-        return
-      }
-
-      addList(listName, accounts)
-      setListName("")
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
-    } catch (err) {
-      setError("Failed to process the file. Please make sure it's a valid cookies file.")
-    } finally {
-      setIsLoading(false)
+      toast({
+        title: "Success",
+        description: "File uploaded successfully",
+      });
+      setFile(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload file",
+        variant: "destructive",
+      });
     }
-  }
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click()
-  }
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="listName">List Name</Label>
-        <Input
-          id="listName"
-          value={listName}
-          onChange={(e) => setListName(e.target.value)}
-          placeholder="Enter a name for this list"
-          required
-        />
-      </div>
-
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        accept=".txt"
-        className="hidden"
-      />
-      
-      <Button 
-        onClick={handleButtonClick}
-        disabled={isLoading}
-        className="w-full"
-      >
-        <Upload className="w-4 h-4 mr-2" />
-        {isLoading ? "Processing..." : "Upload Cookies File"}
-      </Button>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-    </div>
-  )
-}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Upload Accounts</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Select value={serviceType} onValueChange={(value: "youtube" | "vk") => setServiceType(value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select service type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="youtube">YouTube</SelectItem>
+            <SelectItem value="vk">VK</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <div className="space-y-2">
+          <Input
+            type="file"
+            accept=".txt"
+            onChange={handleFileChange}
+            className="cursor-pointer"
+          />
+          <p className="text-sm text-gray-500">
+            {serviceType === "vk" 
+              ? "Upload a text file with VK accounts in login:password format"
+              : "Upload a text file with YouTube cookies"
+            }
+          </p>
+        </div>
+        
+        <Button 
+          onClick={handleUpload}
+          className="w-full"
+          disabled={!file}
+        >
+          Upload {serviceType === "vk" ? "VK" : "YouTube"} Accounts
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
