@@ -5,11 +5,23 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Upload, FileText } from "lucide-react"
+import { Upload, FileText, Type } from "lucide-react"
 import { useAccountLists } from "@/contexts/AccountListsContext"
+
+type AccountStatus = "pending" | "valid" | "invalid"
+
+interface Account {
+  id: string
+  login?: string
+  password?: string
+  cookies?: string
+  status: AccountStatus
+  serviceType: "youtube" | "vk"
+}
 
 export const FileUpload = () => {
   const [file, setFile] = useState<File | null>(null)
+  const [listName, setListName] = useState("")
   const [serviceType, setServiceType] = useState<"youtube" | "vk">("youtube")
   const [isUploading, setIsUploading] = useState(false)
   const { toast } = useToast()
@@ -18,10 +30,14 @@ export const FileUpload = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
+      if (!listName) {
+        const fileName = e.target.files[0].name.replace(".txt", "")
+        setListName(fileName)
+      }
     }
   }
 
-  const parseAccounts = (content: string, type: "youtube" | "vk") => {
+  const parseAccounts = (content: string, type: "youtube" | "vk"): Account[] => {
     const lines = content.split("\n").filter(line => line.trim())
     
     if (type === "vk") {
@@ -31,7 +47,7 @@ export const FileUpload = () => {
           id: `vk-${index}`,
           login: login?.trim(),
           password: password?.trim(),
-          status: "pending",
+          status: "pending" as AccountStatus,
           serviceType: "vk"
         }
       })
@@ -39,7 +55,7 @@ export const FileUpload = () => {
       return lines.map((line, index) => ({
         id: `yt-${index}`,
         cookies: line.trim(),
-        status: "pending",
+        status: "pending" as AccountStatus,
         serviceType: "youtube"
       }))
     }
@@ -55,20 +71,29 @@ export const FileUpload = () => {
       return
     }
 
+    if (!listName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a name for your list",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsUploading(true)
 
     try {
       const content = await file.text()
       const accounts = parseAccounts(content, serviceType)
       
-      const listName = `${serviceType.toUpperCase()} List - ${new Date().toLocaleDateString()}`
-      await addList(listName, accounts, serviceType)
+      await addList(listName.trim(), accounts, serviceType)
 
       toast({
         title: "Success",
         description: "Accounts uploaded successfully",
       })
       setFile(null)
+      setListName("")
     } catch (error) {
       toast({
         title: "Error",
@@ -104,6 +129,18 @@ export const FileUpload = () => {
             <SelectItem value="vk">VK</SelectItem>
           </SelectContent>
         </Select>
+
+        <div className="space-y-2">
+          <div className="relative">
+            <Input
+              placeholder="Enter list name"
+              value={listName}
+              onChange={(e) => setListName(e.target.value)}
+              className="pl-9"
+            />
+            <Type className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          </div>
+        </div>
         
         <div className="space-y-2">
           <div className="relative">
@@ -126,7 +163,7 @@ export const FileUpload = () => {
         <Button 
           onClick={handleUpload}
           className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
-          disabled={!file || isUploading}
+          disabled={!file || isUploading || !listName.trim()}
         >
           {isUploading ? (
             <span className="flex items-center gap-2">
