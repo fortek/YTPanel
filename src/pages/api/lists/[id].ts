@@ -57,12 +57,21 @@ async function renameList(id: string, req: NextApiRequest, res: NextApiResponse)
 
     const oldPath = path.join(LISTS_DIR, `${id}.txt`)
     const newPath = path.join(LISTS_DIR, `${name}.txt`)
+    const oldCleanPath = path.join(LISTS_DIR, `${id}_clean.txt`)
+    const newCleanPath = path.join(LISTS_DIR, `${name}_clean.txt`)
 
     if (!fs.existsSync(oldPath)) {
       return res.status(404).json({ error: "List not found" })
     }
 
+    // Rename main file
     fs.renameSync(oldPath, newPath)
+
+    // Rename clean file if it exists
+    if (fs.existsSync(oldCleanPath)) {
+      fs.renameSync(oldCleanPath, newCleanPath)
+    }
+
     const stats = fs.statSync(newPath)
     const content = fs.readFileSync(newPath, "utf-8")
     const accounts = content.split("\n").filter(Boolean)
@@ -82,9 +91,16 @@ async function renameList(id: string, req: NextApiRequest, res: NextApiResponse)
 async function deleteList(id: string, res: NextApiResponse) {
   try {
     const filePath = path.join(LISTS_DIR, `${id}.txt`)
+    const cleanFilePath = path.join(LISTS_DIR, `${id}_clean.txt`)
     
+    // Delete main file if exists
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath)
+    }
+
+    // Delete clean file if exists
+    if (fs.existsSync(cleanFilePath)) {
+      fs.unlinkSync(cleanFilePath)
     }
 
     return res.status(200).json({ success: true })
