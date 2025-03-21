@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAccountLists } from "@/contexts/AccountListsContext"
 import { formatDistanceToNow } from "date-fns"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Pencil, Trash2, Download } from "lucide-react"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
@@ -120,27 +120,35 @@ export function Sidebar() {
       </div>
 
       <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-        <DialogContent>
+        <DialogContent className="bg-zinc-900 border border-zinc-800 shadow-lg sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Rename List</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-zinc-50">Rename List</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Enter a new name for your list below.
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Enter new name"
-              className="w-full"
+              className="w-full bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              autoFocus
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="sm:justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setIsRenameDialogOpen(false)}
+              className="bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
             >
               Cancel
             </Button>
-            <Button onClick={handleRename}>
-              Save
+            <Button 
+              onClick={handleRename}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
