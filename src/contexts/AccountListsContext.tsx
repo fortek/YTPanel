@@ -75,10 +75,16 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch("/api/lists", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ name, accounts })
       })
 
-      if (!response.ok) throw new Error("Failed to create list")
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to create list")
+      }
       
       const newList = await response.json()
       const listWithDate = { ...newList, createdAt: new Date(newList.createdAt) }

@@ -19,22 +19,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   if (req.method === "POST") {
-    let body = ""
-    req.on("data", chunk => {
-      body += chunk.toString()
+    return new Promise((resolve) => {
+      let rawData = ""
+      
+      req.on("data", (chunk) => {
+        rawData += chunk
+      })
+      
+      req.on("end", async () => {
+        try {
+          const data = JSON.parse(rawData)
+          const result = await createList(data, res)
+          resolve(result)
+        } catch (error) {
+          console.error("Error processing request:", error)
+          res.status(400).json({ error: "Invalid request data" })
+          resolve(undefined)
+        }
+      })
     })
-
-    req.on("end", async () => {
-      try {
-        const data = JSON.parse(body)
-        return await createList(data, res)
-      } catch (error) {
-        console.error("Error parsing request body:", error)
-        return res.status(400).json({ error: "Invalid request body" })
-      }
-    })
-
-    return
   }
 
   return res.status(405).json({ error: "Method not allowed" })
