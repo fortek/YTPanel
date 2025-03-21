@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
 import { useAccountLists } from "@/contexts/AccountListsContext"
 
 export function FileUpload() {
@@ -13,10 +14,13 @@ export function FileUpload() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listName, setListName] = useState("")
+  const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     setError(null)
+    setUploadProgress(0)
+    
     if (!e.target.files?.length) return
     if (!listName.trim()) {
       setError("Please enter a name for the list")
@@ -24,10 +28,23 @@ export function FileUpload() {
     }
 
     setIsLoading(true)
+    const file = e.target.files[0]
+    
     try {
-      const file = e.target.files[0]
-      const text = await file.text()
-      
+      // Read file in chunks to show progress
+      const chunkSize = 1024 * 1024 // 1MB chunks
+      const fileSize = file.size
+      let offset = 0
+      let text = ""
+
+      while (offset < fileSize) {
+        const chunk = file.slice(offset, offset + chunkSize)
+        const chunkText = await chunk.text()
+        text += chunkText
+        offset += chunkSize
+        setUploadProgress(Math.min((offset / fileSize) * 100, 100))
+      }
+
       const accounts = text
         .split("\n")
         .filter(line => line.trim().length > 0)
@@ -42,7 +59,6 @@ export function FileUpload() {
             )
             
             if (relevantCookies.length < 2) return null
-
             return line.trim()
           } catch {
             return null
@@ -55,7 +71,7 @@ export function FileUpload() {
         return
       }
 
-      addList(listName, accounts)
+      await addList(listName, accounts)
       setListName("")
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
@@ -64,6 +80,7 @@ export function FileUpload() {
       setError("Failed to process the file. Please make sure it's a valid cookies file.")
     } finally {
       setIsLoading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -100,6 +117,15 @@ export function FileUpload() {
         <Upload className="w-4 h-4 mr-2" />
         {isLoading ? "Processing..." : "Upload Cookies File"}
       </Button>
+
+      {isLoading && uploadProgress > 0 && (
+        <div className="space-y-2">
+          <Progress value={uploadProgress} className="w-full" />
+          <p className="text-sm text-muted-foreground text-center">
+            Uploading... {Math.round(uploadProgress)}%
+          </p>
+        </div>
+      )}
 
       {error && (
         <Alert variant="destructive">
