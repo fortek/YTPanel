@@ -1,7 +1,6 @@
 
 import { ChangeEvent, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload } from "lucide-react"
@@ -31,29 +30,7 @@ export function FileUpload() {
       const accounts = text
         .split("\n")
         .filter(line => line.trim().length > 0)
-        .map(line => {
-          try {
-            const cookies = line.split(";")
-            const relevantCookies = cookies.filter(cookie => 
-              cookie.includes("SID") || 
-              cookie.includes("HSID") || 
-              cookie.includes("SSID") ||
-              cookie.includes("LOGIN_INFO")
-            )
-            
-            if (relevantCookies.length < 2) return null
-
-            return line.trim()
-          } catch {
-            return null
-          }
-        })
-        .filter((account): account is string => account !== null)
-
-      if (accounts.length === 0) {
-        setError("No valid YouTube cookies found in the file. Please check the format.")
-        return
-      }
+        .map(line => line.trim())
 
       const formData = new FormData()
       formData.append("name", listName)
