@@ -19,7 +19,7 @@ interface AccountsListProps {
   accounts: string[]
 }
 
-const ITEM_SIZE = 50
+const ITEM_SIZE = 56
 
 export function AccountsList({ accounts }: AccountsListProps) {
   const [accountsState, setAccountsState] = useState<Account[]>(
@@ -86,25 +86,42 @@ export function AccountsList({ accounts }: AccountsListProps) {
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const account = accountsState[index]
     return (
-      <div style={style} className="flex items-center border-b border-zinc-200 dark:border-zinc-800">
-        <div className="flex-1 min-w-0 px-4 py-2 flex items-center gap-4">
-          <div className="w-[200px] min-w-[200px]">
+      <div style={style} className="flex items-center px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+        <div className="grid grid-cols-[2fr,2fr,1fr,1fr] gap-4 w-full items-center">
+          <div className="overflow-hidden">
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger className="text-left cursor-help max-w-[180px] truncate block text-sm font-mono text-zinc-900 dark:text-zinc-300">
-                  {account.cookies}
+                <TooltipTrigger asChild>
+                  <div className="text-left cursor-help truncate font-mono text-sm text-zinc-900 dark:text-zinc-300">
+                    {account.cookies}
+                  </div>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[500px] break-all">
-                  <p className="font-mono text-xs">{account.cookies}</p>
+                <TooltipContent side="bottom" className="max-w-[500px]">
+                  <p className="font-mono text-xs break-all whitespace-pre-wrap">
+                    {account.cookies}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="w-[300px] min-w-[300px] font-mono text-sm text-zinc-900 dark:text-zinc-300">
-            {account.email || "-"}
+          <div className="overflow-hidden">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="truncate font-mono text-sm text-zinc-900 dark:text-zinc-300">
+                    {account.email || "-"}
+                  </div>
+                </TooltipTrigger>
+                {account.email && (
+                  <TooltipContent side="bottom">
+                    <p className="font-mono text-xs">{account.email}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <div className="w-[100px] min-w-[100px]">
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+          <div>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
               account.status === "valid" 
                 ? "bg-green-500/10 text-green-700 dark:text-green-400 ring-1 ring-green-500/30" 
                 : account.status === "invalid"
@@ -116,7 +133,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
               {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
             </span>
           </div>
-          <div className="w-[120px] min-w-[120px] text-right">
+          <div className="text-right">
             <Button
               size="sm"
               variant="secondary"
@@ -138,7 +155,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto mt-8">
+    <Card className="w-full max-w-[1200px] mx-auto mt-8">
       <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-6">
         <div>
           <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
@@ -172,13 +189,15 @@ export function AccountsList({ accounts }: AccountsListProps) {
           Check All
         </Button>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-0">
         <div className="flex flex-col">
-          <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 py-2 px-4">
-            <div className="w-[200px] min-w-[200px] text-zinc-900 dark:text-zinc-300 font-semibold">Cookies</div>
-            <div className="w-[300px] min-w-[300px] text-zinc-900 dark:text-zinc-300 font-semibold">Email</div>
-            <div className="w-[100px] min-w-[100px] text-zinc-900 dark:text-zinc-300 font-semibold">Status</div>
-            <div className="w-[120px] min-w-[120px] text-right text-zinc-900 dark:text-zinc-300 font-semibold">Action</div>
+          <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
+            <div className="grid grid-cols-[2fr,2fr,1fr,1fr] gap-4">
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-300">Cookies</div>
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-300">Email</div>
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-300">Status</div>
+              <div className="text-sm font-medium text-right text-zinc-900 dark:text-zinc-300">Action</div>
+            </div>
           </div>
           <div className="h-[600px]">
             <AutoSizer>
