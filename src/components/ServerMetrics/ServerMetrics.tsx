@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Cpu, Memory, Network } from "lucide-react"
+import { Cpu, HardDrive, Network } from "lucide-react"
 
 interface ServerMetrics {
   cpu: number
@@ -61,7 +61,7 @@ export function ServerMetrics() {
       <Card className="bg-zinc-900/50 border-zinc-800">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-zinc-200">Memory Usage</CardTitle>
-          <Memory className="h-4 w-4 text-zinc-400" />
+          <HardDrive className="h-4 w-4 text-zinc-400" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-zinc-50">
