@@ -13,7 +13,7 @@ interface AccountListsContextType {
   activeListId: string | null
   activeList: AccountList | null
   addList: (name: string, accounts: string[]) => Promise<void>
-  setActiveList: (id: string | null) => void
+  setActiveList: (id: string | null) => Promise<void>
   removeList: (id: string) => Promise<void>
   renameList: (id: string, newName: string) => Promise<void>
   downloadList: (id: string) => Promise<void>
@@ -23,16 +23,9 @@ interface AccountListsContextType {
 
 const AccountListsContext = createContext<AccountListsContextType | undefined>(undefined)
 
-const ACTIVE_LIST_KEY = "youtube_active_list"
-
 export function AccountListsProvider({ children }: { children: ReactNode }) {
   const [lists, setLists] = useState<AccountList[]>([])
-  const [activeListId, setActiveListId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(ACTIVE_LIST_KEY)
-    }
-    return null
-  })
+  const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeList, setActiveList] = useState<AccountList | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,16 +33,6 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadListNames()
   }, [])
-
-  useEffect(() => {
-    if (activeListId) {
-      localStorage.setItem(ACTIVE_LIST_KEY, activeListId)
-      loadListContent(activeListId)
-    } else {
-      localStorage.removeItem(ACTIVE_LIST_KEY)
-      setActiveList(null)
-    }
-  }, [activeListId])
 
   const loadListNames = async () => {
     try {
@@ -97,6 +80,16 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const setActiveListAndLoad = async (id: string | null) => {
+    if (id === null) {
+      setActiveListId(null)
+      setActiveList(null)
+      return
+    }
+    setActiveListId(id)
+    await loadListContent(id)
+  }
+
   const addList = async (name: string, accounts: string[]) => {
     try {
       setIsLoading(true)
@@ -113,7 +106,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       const newList = await response.json()
       const listWithDate = { ...newList, createdAt: new Date(newList.createdAt) }
       setLists(prev => [...prev, listWithDate])
-      setActiveListId(newList.id)
+      await setActiveListAndLoad(newList.id)
     } catch (error) {
       console.error("Error adding list:", error)
       throw error
@@ -135,6 +128,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       setLists(prev => prev.filter(list => list.id !== id))
       if (activeListId === id) {
         setActiveListId(null)
+        setActiveList(null)
       }
     } catch (error) {
       console.error("Error removing list:", error)
@@ -200,7 +194,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
         activeListId,
         activeList,
         addList, 
-        setActiveList: setActiveListId,
+        setActiveList: setActiveListAndLoad,
         removeList,
         renameList,
         downloadList,
