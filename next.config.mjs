@@ -5,7 +5,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/uploaded_cookies/:path*",
+        source: "/api/static/:path*",
         headers: [
           {
             key: "Content-Type",
@@ -17,6 +17,10 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      {
+        source: "/uploaded_cookies",
+        destination: "/api/files",
+      },
       {
         source: "/uploaded_cookies/:path*",
         destination: "/api/static/:path*",

@@ -18,6 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const fileContent = fs.readFileSync(filePath, "utf-8")
     res.setHeader("Content-Type", "text/plain")
+    res.setHeader("Content-Disposition", "inline")
     res.send(fileContent)
   } catch (error) {
     console.error("Error serving file:", error)
