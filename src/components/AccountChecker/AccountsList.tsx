@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Check, Loader2, Play } from "lucide-react"
 import { accountService } from "@/services/accountService"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Account {
   id: number
@@ -122,7 +123,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
         <Table>
           <TableHeader>
             <TableRow className="border-zinc-200 dark:border-zinc-800">
-              <TableHead className="w-[200px] text-zinc-900 dark:text-zinc-300 font-semibold">Account ID</TableHead>
+              <TableHead className="w-[200px] text-zinc-900 dark:text-zinc-300 font-semibold">Cookies</TableHead>
               <TableHead className="w-[300px] text-zinc-900 dark:text-zinc-300 font-semibold">Email</TableHead>
               <TableHead className="w-[100px] text-zinc-900 dark:text-zinc-300 font-semibold">Status</TableHead>
               <TableHead className="w-[120px] text-right text-zinc-900 dark:text-zinc-300 font-semibold">Action</TableHead>
@@ -132,7 +133,16 @@ export function AccountsList({ accounts }: AccountsListProps) {
             {accountsState.map((account) => (
               <TableRow key={account.id} className="border-zinc-200 dark:border-zinc-800">
                 <TableCell className="font-mono text-sm text-zinc-900 dark:text-zinc-300">
-                  {account.displayId}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="text-left cursor-help">
+                        {account.displayId}
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[500px] break-all">
+                        <p className="font-mono text-xs">{account.cookies}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </TableCell>
                 <TableCell className="font-mono text-sm text-zinc-900 dark:text-zinc-300">
                   {account.email || "-"}
