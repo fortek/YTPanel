@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import Head from "next/head"
@@ -6,16 +7,14 @@ import { Sidebar } from "@/components/AccountChecker/Sidebar"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAccountLists } from "@/contexts/AccountListsContext"
 import { Button } from "@/components/ui/button"
-import { LogOut, FileText } from 'lucide-react'
-import Link from 'next/link'
+import { LogOut, FileText } from "lucide-react"
+import Link from "next/link"
 
 export default function Home() {
   const { isAuthenticated, logout } = useAuth()
-  const { lists, activeListId, isLoading } = useAccountLists()
+  const { activeList, isLoading } = useAccountLists()
   const router = useRouter()
   const [isLoading2, setIsLoading2] = useState(true)
-
-  const activeList = lists.find(list => list.id === activeListId)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -56,22 +55,31 @@ export default function Home() {
                   </p>
                 )}
               </div>
-              <div className='flex items-center gap-2'>
-                <Link href='/api-docs'>
-                  <Button variant='outline'>
-                    <FileText className='w-4 h-4 mr-2' />
+              <div className="flex items-center gap-2">
+                <Link href="/api-docs">
+                  <Button variant="outline">
+                    <FileText className="w-4 h-4 mr-2" />
                     API Docs
                   </Button>
                 </Link>
-                <Button variant='outline' onClick={logout}>
-                  <LogOut className='w-4 h-4 mr-2' />
+                <Button variant="outline" onClick={logout}>
+                  <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
               </div>
             </div>
             
-            {activeList && activeList.accounts && activeList.accounts.length > 0 && (
-              <AccountsList accounts={activeList.accounts} key={activeList.id} />
+            {isLoading ? (
+              <div className="flex items-center justify-center h-[400px]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading list content...</p>
+                </div>
+              </div>
+            ) : (
+              activeList && activeList.accounts && activeList.accounts.length > 0 && (
+                <AccountsList accounts={activeList.accounts} key={activeList.id} />
+              )
             )}
           </div>
         </main>

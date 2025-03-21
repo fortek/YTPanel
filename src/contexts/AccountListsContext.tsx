@@ -11,8 +11,9 @@ interface AccountList {
 interface AccountListsContextType {
   lists: AccountList[]
   activeListId: string | null
+  activeList: AccountList | null
   addList: (name: string, accounts: string[]) => Promise<void>
-  setActiveList: (id: string | null) => void
+  setActiveList: (id: string | null) => Promise<void>
   removeList: (id: string) => Promise<void>
   renameList: (id: string, newName: string) => Promise<void>
   downloadList: (id: string) => Promise<void>
@@ -32,39 +33,65 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     }
     return null
   })
-  const [isLoading, setIsLoading] = useState(true)
+  const [activeList, setActiveList] = useState<AccountList | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadLists()
+    loadListNames()
   }, [])
 
   useEffect(() => {
     if (activeListId) {
       localStorage.setItem(ACTIVE_LIST_KEY, activeListId)
+      loadListContent(activeListId)
     } else {
       localStorage.removeItem(ACTIVE_LIST_KEY)
+      setActiveList(null)
     }
   }, [activeListId])
 
-  const loadLists = async () => {
+  const loadListNames = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
-      
       const response = await fetch("/api/lists")
       if (!response.ok) {
         throw new Error("Failed to load lists")
       }
       
       const data = await response.json()
-      setLists(data.map((list: any) => ({
+      const listsWithoutAccounts = data.map((list: any) => ({
         ...list,
-        createdAt: new Date(list.createdAt)
-      })))
+        createdAt: new Date(list.createdAt),
+        accounts: []
+      }))
+      setLists(listsWithoutAccounts)
     } catch (error) {
       setError("Failed to load account lists")
       console.error("Error loading lists:", error)
+    }
+  }
+
+  const loadListContent = async (id: string) => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/lists/${id}`)
+      if (!response.ok) {
+        throw new Error("Failed to load list content")
+      }
+      
+      const data = await response.json()
+      const updatedList = {
+        ...data,
+        createdAt: new Date(data.createdAt)
+      }
+      
+      setActiveList(updatedList)
+      setLists(prev => prev.map(list => 
+        list.id === id ? updatedList : list
+      ))
+    } catch (error) {
+      console.error("Error loading list content:", error)
+      setError("Failed to load list content")
     } finally {
       setIsLoading(false)
     }
@@ -84,8 +111,9 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       }
       
       const newList = await response.json()
-      setLists(prev => [...prev, { ...newList, createdAt: new Date(newList.createdAt) }])
-      setActiveListId(newList.id)
+      const listWithDate = { ...newList, createdAt: new Date(newList.createdAt) }
+      setLists(prev => [...prev, listWithDate])
+      await setActiveList(newList.id)
     } catch (error) {
       console.error("Error adding list:", error)
       throw error
@@ -96,7 +124,6 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
 
   const removeList = async (id: string) => {
     try {
-      setIsLoading(true)
       const response = await fetch(`/api/lists/${id}`, {
         method: "DELETE"
       })
@@ -112,8 +139,6 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error removing list:", error)
       throw error
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -134,6 +159,9 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       setLists(prev => prev.map(list => 
         list.id === id ? { ...list, name: updatedList.name } : list
       ))
+      if (activeList?.id === id) {
+        setActiveList({ ...activeList, name: updatedList.name })
+      }
     } catch (error) {
       console.error("Error renaming list:", error)
       throw error
@@ -169,7 +197,8 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     <AccountListsContext.Provider 
       value={{ 
         lists, 
-        activeListId, 
+        activeListId,
+        activeList,
         addList, 
         setActiveList: setActiveListId,
         removeList,
