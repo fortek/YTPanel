@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import Head from "next/head"
@@ -7,7 +6,8 @@ import { Sidebar } from "@/components/AccountChecker/Sidebar"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAccountLists } from "@/contexts/AccountListsContext"
 import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
+import { LogOut, FileText } from 'lucide-react'
+import Link from 'next/link'
 
 export default function Home() {
   const { isAuthenticated, logout } = useAuth()
@@ -56,10 +56,18 @@ export default function Home() {
                   </p>
                 )}
               </div>
-              <Button variant="outline" onClick={logout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+              <div className='flex items-center gap-2'>
+                <Link href='/api-docs'>
+                  <Button variant='outline'>
+                    <FileText className='w-4 h-4 mr-2' />
+                    API Docs
+                  </Button>
+                </Link>
+                <Button variant='outline' onClick={logout}>
+                  <LogOut className='w-4 h-4 mr-2' />
+                  Logout
+                </Button>
+              </div>
             </div>
             
             {activeList && activeList.accounts && activeList.accounts.length > 0 && (
