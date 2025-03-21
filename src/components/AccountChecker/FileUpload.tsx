@@ -48,26 +48,10 @@ export function FileUpload() {
       const accounts = text
         .split("\n")
         .filter(line => line.trim().length > 0)
-        .map(line => {
-          try {
-            const cookies = line.split(";")
-            const relevantCookies = cookies.filter(cookie => 
-              cookie.includes("SID") || 
-              cookie.includes("HSID") || 
-              cookie.includes("SSID") ||
-              cookie.includes("LOGIN_INFO")
-            )
-            
-            if (relevantCookies.length < 2) return null
-            return line.trim()
-          } catch {
-            return null
-          }
-        })
-        .filter((account): account is string => account !== null)
+        .map(line => line.trim())
 
       if (accounts.length === 0) {
-        setError("No valid YouTube cookies found in the file. Please check the format.")
+        setError("The file appears to be empty. Please check the file content.")
         return
       }
 
@@ -77,7 +61,7 @@ export function FileUpload() {
         fileInputRef.current.value = ""
       }
     } catch (err) {
-      setError("Failed to process the file. Please make sure it's a valid cookies file.")
+      setError("Failed to process the file. Please try again.")
     } finally {
       setIsLoading(false)
       setUploadProgress(0)
