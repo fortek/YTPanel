@@ -57,7 +57,9 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
   const loadListContent = async (id: string) => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/lists/${id}`)
+      const response = await fetch(`/api/lists/${id}`, {
+        method: "GET"
+      })
       if (!response.ok) {
         throw new Error("Failed to load list content")
       }
@@ -70,7 +72,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       
       setActiveList(updatedList)
       setLists(prev => prev.map(list => 
-        list.id === id ? updatedList : list
+        list.id === id ? { ...list, accounts: updatedList.accounts } : list
       ))
     } catch (error) {
       console.error("Error loading list content:", error)
@@ -81,18 +83,16 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
   }
 
   const setActiveListAndLoad = async (id: string | null) => {
+    setActiveListId(id)
     if (id === null) {
-      setActiveListId(null)
       setActiveList(null)
       return
     }
-    setActiveListId(id)
     await loadListContent(id)
   }
 
   const addList = async (name: string, accounts: string[]) => {
     try {
-      setIsLoading(true)
       const response = await fetch("/api/lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -104,14 +104,16 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       }
       
       const newList = await response.json()
-      const listWithDate = { ...newList, createdAt: new Date(newList.createdAt) }
+      const listWithDate = { 
+        ...newList, 
+        createdAt: new Date(newList.createdAt),
+        accounts: []
+      }
       setLists(prev => [...prev, listWithDate])
       await setActiveListAndLoad(newList.id)
     } catch (error) {
       console.error("Error adding list:", error)
       throw error
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -138,7 +140,6 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
 
   const renameList = async (id: string, newName: string) => {
     try {
-      setIsLoading(true)
       const response = await fetch(`/api/lists/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -154,13 +155,11 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
         list.id === id ? { ...list, name: updatedList.name } : list
       ))
       if (activeList?.id === id) {
-        setActiveList({ ...activeList, name: updatedList.name })
+        setActiveList(prev => prev ? { ...prev, name: updatedList.name } : null)
       }
     } catch (error) {
       console.error("Error renaming list:", error)
       throw error
-    } finally {
-      setIsLoading(false)
     }
   }
 
