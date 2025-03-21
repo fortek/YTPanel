@@ -84,10 +84,10 @@ export function AccountsList({ accounts }: AccountsListProps) {
   const invalidCount = accountsState.filter(acc => acc.status === "invalid").length
 
   return (
-    <Card className="w-full max-w-4xl mx-auto mt-8 bg-gradient-to-br from-zinc-900/40 to-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 shadow-xl">
+    <Card className="w-full max-w-4xl mx-auto mt-8 border border-zinc-800/50">
       <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-800/50 pb-6">
         <div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+          <CardTitle className="text-2xl font-bold">
             Accounts List ({accountsState.length})
           </CardTitle>
           <div className="mt-2 text-sm text-zinc-400 flex gap-4">
