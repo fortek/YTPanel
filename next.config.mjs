@@ -2,25 +2,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  images: {
-    domains: [
-      'images.unsplash.com',
-      'unsplash.com',
-      'pexels.com',
-      'pixabay.com',
-      'giphy.com',
-      'wikimedia.org'
+  async headers() {
+    return [
+      {
+        source: "/uploaded_cookies/:path*",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "text/plain",
+          },
+        ],
+      },
     ]
-  }
-}
-
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '200mb'
-    },
-    responseLimit: false
-  }
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/uploaded_cookies/:path*",
+        destination: "/api/static/:path*",
+      },
+    ]
+  },
 }
 
 export default nextConfig

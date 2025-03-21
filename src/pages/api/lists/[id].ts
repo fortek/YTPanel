@@ -3,8 +3,16 @@ import { NextApiRequest, NextApiResponse } from "next"
 import fs from "fs"
 import path from "path"
 
-const LISTS_DIR = path.join(process.cwd(), "data", "lists")
+const LISTS_DIR = path.join(process.cwd(), "uploaded_cookies")
 const METADATA_FILE = path.join(LISTS_DIR, "metadata.json")
+
+if (!fs.existsSync(LISTS_DIR)) {
+  fs.mkdirSync(LISTS_DIR, { recursive: true })
+}
+
+if (!fs.existsSync(METADATA_FILE)) {
+  fs.writeFileSync(METADATA_FILE, JSON.stringify([]))
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query

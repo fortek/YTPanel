@@ -9,21 +9,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { id } = req.query
-    const listsDir = path.join(process.cwd(), "uploaded_cookies")
-    const filePath = path.join(listsDir, `${id}.txt`)
+    const { path: pathSegments } = req.query
+    const filePath = path.join(process.cwd(), "uploaded_cookies", ...(pathSegments as string[]))
 
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: "List not found" })
+      return res.status(404).json({ message: "File not found" })
     }
 
     const fileContent = fs.readFileSync(filePath, "utf-8")
-    
     res.setHeader("Content-Type", "text/plain")
-    res.setHeader("Content-Disposition", `attachment; filename=${id}.txt`)
     res.send(fileContent)
   } catch (error) {
-    console.error("Error downloading list:", error)
-    res.status(500).json({ message: "Failed to download list" })
+    console.error("Error serving file:", error)
+    res.status(500).json({ message: "Failed to serve file" })
   }
 }
