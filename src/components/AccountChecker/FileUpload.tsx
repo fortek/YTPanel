@@ -1,7 +1,6 @@
 
 import { ChangeEvent, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload } from "lucide-react"
@@ -31,8 +30,8 @@ export function FileUpload() {
     const file = e.target.files[0]
     
     try {
-      // Read file in chunks to show progress
-      const chunkSize = 1024 * 1024 // 1MB chunks
+      // Optimize chunk size for better performance
+      const chunkSize = 5 * 1024 * 1024 // 5MB chunks
       const fileSize = file.size
       let offset = 0
       let text = ""
@@ -42,34 +41,34 @@ export function FileUpload() {
         const chunkText = await chunk.text()
         text += chunkText
         offset += chunkSize
-        setUploadProgress(Math.min((offset / fileSize) * 100, 100))
+        
+        // Update progress more frequently
+        const progress = (offset / fileSize) * 100
+        setUploadProgress(Math.min(progress, 99)) // Keep at 99% until fully processed
       }
 
       const accounts = text
         .split("\n")
-        .filter(line => line.trim().length > 0)
+        .filter(line => line.trim())
         .map(line => line.trim())
 
       if (accounts.length === 0) {
-        setError("The file appears to be empty. Please check the file content.")
-        return
+        throw new Error("The file appears to be empty")
       }
 
       await addList(listName, accounts)
+      setUploadProgress(100) // Show 100% when complete
       setListName("")
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
     } catch (err) {
-      setError("Failed to process the file. Please try again.")
+      console.error("Upload error:", err)
+      setError(err instanceof Error ? err.message : "Failed to process the file")
     } finally {
       setIsLoading(false)
-      setUploadProgress(0)
+      setTimeout(() => setUploadProgress(0), 1000) // Reset progress after a delay
     }
-  }
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click()
   }
 
   return (
@@ -81,6 +80,7 @@ export function FileUpload() {
           value={listName}
           onChange={(e) => setListName(e.target.value)}
           placeholder="Enter a name for this list"
+          disabled={isLoading}
           required
         />
       </div>
@@ -94,19 +94,21 @@ export function FileUpload() {
       />
       
       <Button 
-        onClick={handleButtonClick}
-        disabled={isLoading}
-        className="w-full"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isLoading || !listName.trim()}
+        className="w-full relative"
       >
         <Upload className="w-4 h-4 mr-2" />
-        {isLoading ? "Processing..." : "Upload Cookies File"}
+        {isLoading ? "Uploading..." : "Upload Cookies File"}
       </Button>
 
-      {isLoading && uploadProgress > 0 && (
+      {uploadProgress > 0 && (
         <div className="space-y-2">
-          <Progress value={uploadProgress} className="w-full" />
+          <Progress value={uploadProgress} className="w-full h-2" />
           <p className="text-sm text-muted-foreground text-center">
-            Uploading... {Math.round(uploadProgress)}%
+            {uploadProgress < 100 
+              ? `Uploading... ${Math.round(uploadProgress)}%`
+              : "Upload complete!"}
           </p>
         </div>
       )}

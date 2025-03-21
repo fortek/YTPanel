@@ -5,13 +5,14 @@ import path from "path"
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: {
+      sizeLimit: "500mb", // Increase size limit for large files
+    },
   },
 }
 
 const LISTS_DIR = path.join(process.cwd(), "uploaded_cookies")
 
-// Ensure directory exists
 if (!fs.existsSync(LISTS_DIR)) {
   fs.mkdirSync(LISTS_DIR, { recursive: true })
 }
@@ -58,43 +59,32 @@ async function getLists(res: NextApiResponse) {
 }
 
 async function createList(req: NextApiRequest, res: NextApiResponse) {
+  if (!req.body) {
+    return res.status(400).json({ error: "Request body is required" })
+  }
+
   try {
-    let body = ""
-    req.on("data", (chunk) => {
-      body += chunk.toString()
-    })
+    const { name, accounts } = req.body
 
-    req.on("end", () => {
-      try {
-        const { name, accounts } = JSON.parse(body)
-        if (!name || !accounts || !Array.isArray(accounts)) {
-          return res.status(400).json({ error: "Name and accounts array are required" })
-        }
+    if (!name || !accounts || !Array.isArray(accounts)) {
+      return res.status(400).json({ error: "Name and accounts array are required" })
+    }
 
-        const fileName = `${name}.txt`
-        const filePath = path.join(LISTS_DIR, fileName)
+    const fileName = `${name}.txt`
+    const filePath = path.join(LISTS_DIR, fileName)
 
-        // Check if file already exists
-        if (fs.existsSync(filePath)) {
-          return res.status(400).json({ error: "A list with this name already exists" })
-        }
+    if (fs.existsSync(filePath)) {
+      return res.status(400).json({ error: "A list with this name already exists" })
+    }
 
-        // Save accounts to file
-        fs.writeFileSync(filePath, accounts.join("\n"), "utf-8")
+    fs.writeFileSync(filePath, accounts.join("\n"), "utf-8")
+    const stats = fs.statSync(filePath)
 
-        const stats = fs.statSync(filePath)
-        const newList = {
-          id: name,
-          name,
-          createdAt: stats.birthtime,
-          accounts
-        }
-
-        return res.status(201).json(newList)
-      } catch (error) {
-        console.error("Error parsing request body:", error)
-        return res.status(400).json({ error: "Invalid request body" })
-      }
+    return res.status(201).json({
+      id: name,
+      name,
+      createdAt: stats.birthtime,
+      accounts
     })
   } catch (error) {
     console.error("Error creating list:", error)
