@@ -50,8 +50,12 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
   const loadLists = async () => {
     try {
       setIsLoading(true)
+      setError(null)
+      
       const response = await fetch("/api/lists")
-      if (!response.ok) throw new Error("Failed to load lists")
+      if (!response.ok) {
+        throw new Error("Failed to load lists")
+      }
       
       const data = await response.json()
       setLists(data.map((list: any) => ({
@@ -68,13 +72,16 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
 
   const addList = async (name: string, accounts: string[]) => {
     try {
+      setIsLoading(true)
       const response = await fetch("/api/lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, accounts })
       })
 
-      if (!response.ok) throw new Error("Failed to create list")
+      if (!response.ok) {
+        throw new Error("Failed to create list")
+      }
       
       const newList = await response.json()
       setLists(prev => [...prev, { ...newList, createdAt: new Date(newList.createdAt) }])
@@ -82,16 +89,21 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error adding list:", error)
       throw error
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const removeList = async (id: string) => {
     try {
+      setIsLoading(true)
       const response = await fetch(`/api/lists/${id}`, {
         method: "DELETE"
       })
 
-      if (!response.ok) throw new Error("Failed to delete list")
+      if (!response.ok) {
+        throw new Error("Failed to delete list")
+      }
 
       setLists(prev => prev.filter(list => list.id !== id))
       if (activeListId === id) {
@@ -100,18 +112,23 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error removing list:", error)
       throw error
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const renameList = async (id: string, newName: string) => {
     try {
+      setIsLoading(true)
       const response = await fetch(`/api/lists/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName })
       })
 
-      if (!response.ok) throw new Error("Failed to rename list")
+      if (!response.ok) {
+        throw new Error("Failed to rename list")
+      }
 
       const updatedList = await response.json()
       setLists(prev => prev.map(list => 
@@ -120,6 +137,8 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error renaming list:", error)
       throw error
+    } finally {
+      setIsLoading(false)
     }
   }
 
