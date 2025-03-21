@@ -20,10 +20,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   if (req.method === "POST") {
+    // Remove any size limits from formidable
     const form = formidable({
-      maxFileSize: Infinity, // Remove file size limit
+      maxFileSize: Infinity,
+      maxTotalFileSize: Infinity,
       maxFields: 2,
       keepExtensions: true,
+      multiples: false
     })
 
     return new Promise((resolve, reject) => {
