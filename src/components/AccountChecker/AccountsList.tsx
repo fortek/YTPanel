@@ -1,11 +1,13 @@
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Check, Loader2, Play } from "lucide-react"
 import { accountService } from "@/services/accountService"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { FixedSizeList as List } from "react-window"
+import AutoSizer from "react-virtualized-auto-sizer"
 
 interface Account {
   id: number
@@ -17,6 +19,8 @@ interface Account {
 interface AccountsListProps {
   accounts: string[]
 }
+
+const ITEM_SIZE = 50 // Height of each row in pixels
 
 export function AccountsList({ accounts }: AccountsListProps) {
   const [accountsState, setAccountsState] = useState<Account[]>(
@@ -31,6 +35,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
     })
   )
   const [isCheckingAll, setIsCheckingAll] = useState(false)
+  const listRef = useRef<List>(null)
 
   const checkAccount = async (id: number) => {
     setAccountsState(prev =>
@@ -69,6 +74,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
     
     for (const account of pendingAccounts) {
       await checkAccount(account.id)
+      listRef.current?.scrollToItem(account.id)
     }
     
     setIsCheckingAll(false)
@@ -77,6 +83,60 @@ export function AccountsList({ accounts }: AccountsListProps) {
   const pendingCount = accountsState.filter(acc => acc.status === "pending").length
   const validCount = accountsState.filter(acc => acc.status === "valid").length
   const invalidCount = accountsState.filter(acc => acc.status === "invalid").length
+
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const account = accountsState[index]
+    return (
+      <div style={style} className="flex items-center border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex-1 min-w-0 px-4 py-2 flex items-center gap-4">
+          <div className="w-[200px] min-w-[200px]">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger className="text-left cursor-help max-w-[180px] truncate block text-sm font-mono text-zinc-900 dark:text-zinc-300">
+                  {account.cookies}
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[500px] break-all">
+                  <p className="font-mono text-xs">{account.cookies}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="w-[300px] min-w-[300px] font-mono text-sm text-zinc-900 dark:text-zinc-300">
+            {account.email || "-"}
+          </div>
+          <div className="w-[100px] min-w-[100px]">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+              account.status === "valid" 
+                ? "bg-green-500/10 text-green-700 dark:text-green-400 ring-1 ring-green-500/30" 
+                : account.status === "invalid"
+                ? "bg-red-500/10 text-red-700 dark:text-red-400 ring-1 ring-red-500/30"
+                : account.status === "checking"
+                ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500/30"
+                : "bg-zinc-500/10 text-zinc-700 dark:text-zinc-400 ring-1 ring-zinc-500/30"
+            }`}>
+              {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
+            </span>
+          </div>
+          <div className="w-[120px] min-w-[120px] text-right">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => checkAccount(account.id)}
+              disabled={account.status === "checking" || isCheckingAll}
+              className="w-[100px]"
+            >
+              {account.status === "checking" ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Check className="w-4 h-4 mr-2" />
+              )}
+              Check
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <Card className="w-full max-w-4xl mx-auto mt-8">
@@ -114,66 +174,29 @@ export function AccountsList({ accounts }: AccountsListProps) {
         </Button>
       </CardHeader>
       <CardContent className="p-6">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-zinc-200 dark:border-zinc-800">
-              <TableHead className="w-[200px] text-zinc-900 dark:text-zinc-300 font-semibold">Cookies</TableHead>
-              <TableHead className="w-[300px] text-zinc-900 dark:text-zinc-300 font-semibold">Email</TableHead>
-              <TableHead className="w-[100px] text-zinc-900 dark:text-zinc-300 font-semibold">Status</TableHead>
-              <TableHead className="w-[120px] text-right text-zinc-900 dark:text-zinc-300 font-semibold">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {accountsState.map((account) => (
-              <TableRow key={account.id} className="border-zinc-200 dark:border-zinc-800">
-                <TableCell className="font-mono text-sm text-zinc-900 dark:text-zinc-300">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger className="text-left cursor-help max-w-[180px] truncate block">
-                        {account.cookies}
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-[500px] break-all">
-                        <p className="font-mono text-xs">{account.cookies}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
-                <TableCell className="font-mono text-sm text-zinc-900 dark:text-zinc-300">
-                  {account.email || "-"}
-                </TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    account.status === "valid" 
-                      ? "bg-green-500/10 text-green-700 dark:text-green-400 ring-1 ring-green-500/30" 
-                      : account.status === "invalid"
-                      ? "bg-red-500/10 text-red-700 dark:text-red-400 ring-1 ring-red-500/30"
-                      : account.status === "checking"
-                      ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500/30"
-                      : "bg-zinc-500/10 text-zinc-700 dark:text-zinc-400 ring-1 ring-zinc-500/30"
-                  }`}>
-                    {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => checkAccount(account.id)}
-                    disabled={account.status === "checking" || isCheckingAll}
-                    className="w-[100px]"
-                  >
-                    {account.status === "checking" ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Check className="w-4 h-4 mr-2" />
-                    )}
-                    Check
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="flex flex-col">
+          <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 py-2 px-4">
+            <div className="w-[200px] min-w-[200px] text-zinc-900 dark:text-zinc-300 font-semibold">Cookies</div>
+            <div className="w-[300px] min-w-[300px] text-zinc-900 dark:text-zinc-300 font-semibold">Email</div>
+            <div className="w-[100px] min-w-[100px] text-zinc-900 dark:text-zinc-300 font-semibold">Status</div>
+            <div className="w-[120px] min-w-[120px] text-right text-zinc-900 dark:text-zinc-300 font-semibold">Action</div>
+          </div>
+          <div className="h-[600px]">
+            <AutoSizer>
+              {({ height, width }) => (
+                <List
+                  ref={listRef}
+                  height={height}
+                  itemCount={accountsState.length}
+                  itemSize={ITEM_SIZE}
+                  width={width}
+                >
+                  {Row}
+                </List>
+              )}
+            </AutoSizer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
