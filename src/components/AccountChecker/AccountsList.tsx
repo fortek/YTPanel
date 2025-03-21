@@ -10,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface Account {
   id: number
   cookies: string
-  displayId: string
   email: string
   status: "pending" | "checking" | "valid" | "invalid"
 }
@@ -26,7 +25,6 @@ export function AccountsList({ accounts }: AccountsListProps) {
       return {
         id: index,
         cookies: cookies.trim(),
-        displayId: `Account ${index + 1}`,
         email: email ? email.trim() : "",
         status: "pending"
       }
@@ -131,8 +129,8 @@ export function AccountsList({ accounts }: AccountsListProps) {
                 <TableCell className="font-mono text-sm text-zinc-900 dark:text-zinc-300">
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger className="text-left cursor-help">
-                        {account.displayId}
+                      <TooltipTrigger className="text-left cursor-help max-w-[180px] truncate block">
+                        {account.cookies}
                       </TooltipTrigger>
                       <TooltipContent className="max-w-[500px] break-all">
                         <p className="font-mono text-xs">{account.cookies}</p>
