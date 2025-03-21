@@ -6,7 +6,8 @@ import formidable from "formidable"
 
 export const config = {
   api: {
-    bodyParser: false
+    bodyParser: false,
+    responseLimit: false
   }
 }
 
@@ -20,7 +21,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   
   if (req.method === "POST") {
     const form = formidable({
-      maxFileSize: 200 * 1024 * 1024, // 200MB
+      maxFileSize: Infinity, // Remove file size limit
+      maxFields: 2,
+      keepExtensions: true,
     })
 
     return new Promise((resolve, reject) => {
