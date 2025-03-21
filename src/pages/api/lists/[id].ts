@@ -4,15 +4,6 @@ import fs from "fs"
 import path from "path"
 
 const LISTS_DIR = path.join(process.cwd(), "uploaded_cookies")
-const METADATA_FILE = path.join(LISTS_DIR, "metadata.json")
-
-if (!fs.existsSync(LISTS_DIR)) {
-  fs.mkdirSync(LISTS_DIR, { recursive: true })
-}
-
-if (!fs.existsSync(METADATA_FILE)) {
-  fs.writeFileSync(METADATA_FILE, JSON.stringify([]))
-}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query
@@ -38,17 +29,24 @@ async function renameList(id: string, req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Name is required" })
     }
 
-    const metadata = JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"))
-    const listIndex = metadata.findIndex((list: any) => list.id === id)
+    const oldPath = path.join(LISTS_DIR, `${id}.txt`)
+    const newPath = path.join(LISTS_DIR, `${name}.txt`)
 
-    if (listIndex === -1) {
+    if (!fs.existsSync(oldPath)) {
       return res.status(404).json({ error: "List not found" })
     }
 
-    metadata[listIndex].name = name
-    fs.writeFileSync(METADATA_FILE, JSON.stringify(metadata, null, 2))
+    fs.renameSync(oldPath, newPath)
+    const stats = fs.statSync(newPath)
+    const content = fs.readFileSync(newPath, "utf-8")
+    const accounts = content.split("\n").filter(Boolean)
 
-    return res.status(200).json(metadata[listIndex])
+    return res.status(200).json({
+      id: name,
+      name,
+      createdAt: stats.birthtime,
+      accounts
+    })
   } catch (error) {
     console.error("Error renaming list:", error)
     return res.status(500).json({ error: "Failed to rename list" })
@@ -57,15 +55,11 @@ async function renameList(id: string, req: NextApiRequest, res: NextApiResponse)
 
 async function deleteList(id: string, res: NextApiResponse) {
   try {
-    const accountsPath = path.join(LISTS_DIR, `${id}.txt`)
+    const filePath = path.join(LISTS_DIR, `${id}.txt`)
     
-    if (fs.existsSync(accountsPath)) {
-      fs.unlinkSync(accountsPath)
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
     }
-
-    const metadata = JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"))
-    const updatedMetadata = metadata.filter((list: any) => list.id !== id)
-    fs.writeFileSync(METADATA_FILE, JSON.stringify(updatedMetadata, null, 2))
 
     return res.status(200).json({ success: true })
   } catch (error) {
