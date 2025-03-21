@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import Head from "next/head"
@@ -9,6 +8,7 @@ import { useAccountLists } from "@/contexts/AccountListsContext"
 import { Button } from "@/components/ui/button"
 import { LogOut, FileText, FolderOpen } from "lucide-react"
 import Link from "next/link"
+import { ServerMetrics } from '@/components/ServerMetrics/ServerMetrics'
 
 export default function Home() {
   const { isAuthenticated, logout } = useAuth()
@@ -44,36 +44,38 @@ export default function Home() {
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
           <div className="container py-8 px-4">
-            <div className="flex justify-between items-center mb-8">
+            <div className='flex justify-between items-center mb-8'>
               <div>
-                <h1 className="text-3xl font-bold">
+                <h1 className='text-3xl font-bold'>
                   YouTube Account Checker
                 </h1>
                 {activeList && (
-                  <p className="text-muted-foreground mt-2">
+                  <p className='text-muted-foreground mt-2'>
                     Current list: {activeList.name}
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <Link href="/uploaded_cookies">
-                  <Button variant="outline">
-                    <FolderOpen className="w-4 h-4 mr-2" />
+              <div className='flex items-center gap-2'>
+                <Link href='/uploaded_cookies'>
+                  <Button variant='outline'>
+                    <FolderOpen className='w-4 h-4 mr-2' />
                     Cookies Files
                   </Button>
                 </Link>
-                <Link href="/api-docs">
-                  <Button variant="outline">
-                    <FileText className="w-4 h-4 mr-2" />
+                <Link href='/api-docs'>
+                  <Button variant='outline'>
+                    <FileText className='w-4 h-4 mr-2' />
                     API Docs
                   </Button>
                 </Link>
-                <Button variant="outline" onClick={logout}>
-                  <LogOut className="w-4 h-4 mr-2" />
+                <Button variant='outline' onClick={logout}>
+                  <LogOut className='w-4 h-4 mr-2' />
                   Logout
                 </Button>
               </div>
             </div>
+            
+            <ServerMetrics />
             
             {isLoading ? (
               <div className="flex items-center justify-center h-[400px]">
