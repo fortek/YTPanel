@@ -38,6 +38,10 @@ export function AccountsList({ accounts }: AccountsListProps) {
   const listRef = useRef<List>(null)
 
   const checkAccount = async (id: number) => {
+    if (shouldStop) {
+      return
+    }
+
     setAccountsState(prev =>
       prev.map(acc =>
         acc.id === id ? { ...acc, status: "checking" } : acc
@@ -50,6 +54,15 @@ export function AccountsList({ accounts }: AccountsListProps) {
 
       const result = await accountService.checkAccount(account.cookies)
       
+      if (shouldStop) {
+        setAccountsState(prev =>
+          prev.map(acc =>
+            acc.id === id ? { ...acc, status: "pending" } : acc
+          )
+        )
+        return
+      }
+
       setAccountsState(prev =>
         prev.map(acc =>
           acc.id === id ? {
@@ -60,17 +73,25 @@ export function AccountsList({ accounts }: AccountsListProps) {
         )
       )
     } catch (error) {
-      setAccountsState(prev =>
-        prev.map(acc =>
-          acc.id === id ? { ...acc, status: "invalid" } : acc
+      if (!shouldStop) {
+        setAccountsState(prev =>
+          prev.map(acc =>
+            acc.id === id ? { ...acc, status: "invalid" } : acc
+          )
         )
-      )
+      }
     }
   }
 
   const checkAllAccounts = async () => {
     if (isCheckingAll) {
       setShouldStop(true)
+      setIsCheckingAll(false)
+      setAccountsState(prev =>
+        prev.map(acc =>
+          acc.status === "checking" ? { ...acc, status: "pending" } : acc
+        )
+      )
       return
     }
 
@@ -189,7 +210,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
         </div>
         <Button
           onClick={checkAllAccounts}
-          disabled={(!isCheckingAll && pendingCount === 0) || shouldStop}
+          disabled={(!isCheckingAll && pendingCount === 0)}
           className="ml-4"
           variant={isCheckingAll ? "destructive" : "default"}
         >
