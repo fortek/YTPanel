@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAccountLists } from "@/contexts/AccountListsContext"
 import { formatDistanceToNow } from "date-fns"
-import { Trash2 } from "lucide-react"
+import { Pencil, Trash2, Upload } from "lucide-react"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
 
 export function Sidebar() {
@@ -39,17 +39,41 @@ export function Sidebar() {
                       {formatDistanceToNow(list.createdAt, { addSuffix: true })}
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removeList(list.id)
-                    }}
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        // Handle rename action
+                      }}
+                      className="h-8 w-8"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        // Handle upload action
+                      }}
+                      className="h-8 w-8"
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeList(list.id)
+                      }}
+                      className="h-8 w-8"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
