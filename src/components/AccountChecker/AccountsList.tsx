@@ -34,13 +34,11 @@ export function AccountsList({ accounts }: AccountsListProps) {
     })
   )
   const [isCheckingAll, setIsCheckingAll] = useState(false)
-  const [shouldStop, setShouldStop] = useState(false)
+  const stopCheckingRef = useRef(false)
   const listRef = useRef<List>(null)
 
   const checkAccount = async (id: number) => {
-    if (shouldStop) {
-      return
-    }
+    if (stopCheckingRef.current) return false
 
     setAccountsState(prev =>
       prev.map(acc =>
@@ -50,17 +48,17 @@ export function AccountsList({ accounts }: AccountsListProps) {
 
     try {
       const account = accountsState.find(acc => acc.id === id)
-      if (!account) return
+      if (!account) return false
 
       const result = await accountService.checkAccount(account.cookies)
       
-      if (shouldStop) {
+      if (stopCheckingRef.current) {
         setAccountsState(prev =>
           prev.map(acc =>
             acc.id === id ? { ...acc, status: "pending" } : acc
           )
         )
-        return
+        return false
       }
 
       setAccountsState(prev =>
@@ -72,20 +70,22 @@ export function AccountsList({ accounts }: AccountsListProps) {
           } : acc
         )
       )
+      return true
     } catch (error) {
-      if (!shouldStop) {
+      if (!stopCheckingRef.current) {
         setAccountsState(prev =>
           prev.map(acc =>
             acc.id === id ? { ...acc, status: "invalid" } : acc
           )
         )
       }
+      return false
     }
   }
 
   const checkAllAccounts = async () => {
     if (isCheckingAll) {
-      setShouldStop(true)
+      stopCheckingRef.current = true
       setIsCheckingAll(false)
       setAccountsState(prev =>
         prev.map(acc =>
@@ -96,19 +96,20 @@ export function AccountsList({ accounts }: AccountsListProps) {
     }
 
     setIsCheckingAll(true)
-    setShouldStop(false)
+    stopCheckingRef.current = false
     const pendingAccounts = accountsState.filter(acc => acc.status === "pending" || acc.status === "invalid")
     
     for (const account of pendingAccounts) {
-      if (shouldStop) {
-        break
+      if (stopCheckingRef.current) break
+      
+      const success = await checkAccount(account.id)
+      if (success && !stopCheckingRef.current) {
+        listRef.current?.scrollToItem(account.id)
       }
-      await checkAccount(account.id)
-      listRef.current?.scrollToItem(account.id)
     }
     
     setIsCheckingAll(false)
-    setShouldStop(false)
+    stopCheckingRef.current = false
   }
 
   const pendingCount = accountsState.filter(acc => acc.status === "pending").length
