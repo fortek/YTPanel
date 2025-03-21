@@ -68,71 +68,82 @@ export default function ApiDocsPage() {
   ]
 
   return (
-    <div className="container py-8 max-w-[1200px]">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">API Documentation</h1>
-        <Link href="/">
-          <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to App
-          </Button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-zinc-950 py-12 px-4">
+      <div className="max-w-[1000px] mx-auto">
+        <div className="flex items-center justify-between mb-12">
+          <div>
+            <h1 className="text-4xl font-bold text-zinc-50 mb-2">API Documentation</h1>
+            <p className="text-zinc-400 text-lg">
+              Complete reference for all available API endpoints
+            </p>
+          </div>
+          <Link href="/">
+            <Button variant="outline" className="border-zinc-800 hover:bg-zinc-800">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to App
+            </Button>
+          </Link>
+        </div>
 
-      <div className="space-y-8">
-        {endpoints.map((endpoint, index) => (
-          <Card key={index}>
-            <CardHeader>
-              <div className="flex items-center gap-4">
-                <span className={`px-2 py-1 text-sm font-medium rounded ${
-                  endpoint.method === "GET" 
-                    ? "bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/30"
-                    : "bg-green-500/10 text-green-500 ring-1 ring-green-500/30"
-                }`}>
-                  {endpoint.method}
-                </span>
-                <CardTitle className="text-xl">{endpoint.title}</CardTitle>
-              </div>
-              <CardDescription className="text-base mt-2">
-                <code className="px-2 py-1 bg-zinc-800 rounded">{endpoint.path}</code>
-              </CardDescription>
-              <CardDescription className="mt-2">
-                {endpoint.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {endpoint.requestBody && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium mb-2">Request Body:</h3>
-                  <pre className="bg-zinc-800 p-4 rounded-md overflow-x-auto">
-                    <code>{JSON.stringify(endpoint.requestBody, null, 2)}</code>
-                  </pre>
+        <div className="space-y-6">
+          {endpoints.map((endpoint, index) => (
+            <Card key={index} className="border-zinc-800/50 bg-zinc-900/50 backdrop-blur-sm">
+              <CardHeader className="border-b border-zinc-800/50 pb-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <span className={`px-3 py-1.5 text-sm font-medium rounded-full ${
+                    endpoint.method === "GET" 
+                      ? "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/30"
+                      : "bg-green-500/10 text-green-400 ring-1 ring-green-500/30"
+                  }`}>
+                    {endpoint.method}
+                  </span>
+                  <CardTitle className="text-2xl text-zinc-50">{endpoint.title}</CardTitle>
                 </div>
-              )}
-              <div>
-                <h3 className="text-sm font-medium mb-2">Responses:</h3>
-                <div className="space-y-4">
-                  {Object.entries(endpoint.responses).map(([code, response]) => (
-                    <div key={code}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-1 text-sm font-medium rounded ${
+                <code className="px-3 py-2 bg-zinc-800 rounded-lg text-zinc-300 font-mono text-sm block">
+                  {endpoint.path}
+                </code>
+                <CardDescription className="mt-4 text-zinc-400 text-base">
+                  {endpoint.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-6">
+                {endpoint.requestBody && (
+                  <div>
+                    <h3 className="text-sm font-medium text-zinc-300 mb-3">Request Body</h3>
+                    <pre className="bg-zinc-800 p-4 rounded-lg overflow-x-auto">
+                      <code className="text-zinc-300 text-sm">
+                        {JSON.stringify(endpoint.requestBody, null, 2)}
+                      </code>
+                    </pre>
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-sm font-medium text-zinc-300 mb-3">Responses</h3>
+                  <div className="space-y-4">
+                    {Object.entries(endpoint.responses).map(([code, response]) => (
+                      <div key={code}>
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-3 ${
                           code.startsWith("2")
-                            ? "bg-green-500/10 text-green-500 ring-1 ring-green-500/30"
-                            : "bg-red-500/10 text-red-500 ring-1 ring-red-500/30"
+                            ? "bg-green-500/10 text-green-400 ring-1 ring-green-500/30"
+                            : code.startsWith("4")
+                            ? "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/30"
+                            : "bg-red-500/10 text-red-400 ring-1 ring-red-500/30"
                         }`}>
                           {code}
                         </span>
+                        <pre className="bg-zinc-800 p-4 rounded-lg overflow-x-auto">
+                          <code className="text-zinc-300 text-sm">
+                            {JSON.stringify(response, null, 2)}
+                          </code>
+                        </pre>
                       </div>
-                      <pre className="bg-zinc-800 p-4 rounded-md overflow-x-auto">
-                        <code>{JSON.stringify(response, null, 2)}</code>
-                      </pre>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   )
