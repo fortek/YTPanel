@@ -10,7 +10,6 @@ import { Pencil, Trash2, Download, Loader2 } from "lucide-react"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
 import { useState } from "react"
 import { toast } from "sonner"
-import { Skeleton } from "@/components/ui/skeleton"
 
 export function Sidebar() {
   const { lists, activeListId, setActiveList, removeList, renameList, downloadList, isLoading } = useAccountLists()
@@ -61,71 +60,61 @@ export function Sidebar() {
           <div className="px-3 py-2">
             <div className="flex items-center justify-between mb-2 px-4">
               <h2 className="text-lg font-semibold">Account Lists</h2>
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
             </div>
             <ScrollArea className="h-[calc(100vh-20rem)]">
               <div className="space-y-1">
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="px-4 py-2">
-                      <Skeleton className="h-5 w-3/4 mb-2" />
-                      <Skeleton className="h-3 w-1/2" />
-                    </div>
-                  ))
-                ) : (
-                  lists.map((list) => (
-                    <div
-                      key={list.id}
-                      className={cn(
-                        "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-zinc-800/50 cursor-pointer group",
-                        activeListId === list.id && "bg-zinc-800/30 ring-1 ring-zinc-700/50"
-                      )}
-                      onClick={() => handleListSelect(list.id)}
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{list.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(list.createdAt, { addSuffix: true })}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openRenameDialog(list.id, list.name)
-                          }}
-                          className="h-8 w-8"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDownload(list.id)
-                          }}
-                          className="h-8 w-8"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            removeList(list.id)
-                          }}
-                          className="h-8 w-8"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                {lists.map((list) => (
+                  <div
+                    key={list.id}
+                    className={cn(
+                      "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-zinc-800/50 cursor-pointer group",
+                      activeListId === list.id && "bg-zinc-800/30 ring-1 ring-zinc-700/50"
+                    )}
+                    onClick={() => handleListSelect(list.id)}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{list.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(list.createdAt, { addSuffix: true })}
                       </div>
                     </div>
-                  ))
-                )}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openRenameDialog(list.id, list.name)
+                        }}
+                        className="h-8 w-8"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownload(list.id)
+                        }}
+                        className="h-8 w-8"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeList(list.id)
+                        }}
+                        className="h-8 w-8"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </ScrollArea>
           </div>
