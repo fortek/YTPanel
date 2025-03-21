@@ -2,7 +2,7 @@
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check, Loader2, Play } from "lucide-react"
+import { Check, Loader2, Play, Square } from "lucide-react"
 import { accountService } from "@/services/accountService"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FixedSizeList as List } from "react-window"
@@ -34,6 +34,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
     })
   )
   const [isCheckingAll, setIsCheckingAll] = useState(false)
+  const [shouldStop, setShouldStop] = useState(false)
   const listRef = useRef<List>(null)
 
   const checkAccount = async (id: number) => {
@@ -68,15 +69,25 @@ export function AccountsList({ accounts }: AccountsListProps) {
   }
 
   const checkAllAccounts = async () => {
+    if (isCheckingAll) {
+      setShouldStop(true)
+      return
+    }
+
     setIsCheckingAll(true)
+    setShouldStop(false)
     const pendingAccounts = accountsState.filter(acc => acc.status === "pending" || acc.status === "invalid")
     
     for (const account of pendingAccounts) {
+      if (shouldStop) {
+        break
+      }
       await checkAccount(account.id)
       listRef.current?.scrollToItem(account.id)
     }
     
     setIsCheckingAll(false)
+    setShouldStop(false)
   }
 
   const pendingCount = accountsState.filter(acc => acc.status === "pending").length
@@ -178,15 +189,21 @@ export function AccountsList({ accounts }: AccountsListProps) {
         </div>
         <Button
           onClick={checkAllAccounts}
-          disabled={isCheckingAll || pendingCount === 0}
+          disabled={(!isCheckingAll && pendingCount === 0) || shouldStop}
           className="ml-4"
+          variant={isCheckingAll ? "destructive" : "default"}
         >
           {isCheckingAll ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <>
+              <Square className="w-4 h-4 mr-2" />
+              Stop All
+            </>
           ) : (
-            <Play className="w-4 h-4 mr-2" />
+            <>
+              <Play className="w-4 h-4 mr-2" />
+              Check All
+            </>
           )}
-          Check All
         </Button>
       </CardHeader>
       <CardContent className="p-0">
