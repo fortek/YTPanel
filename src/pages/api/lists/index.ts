@@ -36,7 +36,7 @@ async function getLists(res: NextApiResponse) {
     }
 
     const files = fs.readdirSync(LISTS_DIR)
-      .filter(file => file.endsWith(".txt"))
+      .filter(file => file.endsWith(".txt") && !file.endsWith("_clean.txt"))
       .map(file => {
         const filePath = path.join(LISTS_DIR, file)
         const stats = fs.statSync(filePath)
@@ -70,12 +70,23 @@ async function createList(req: NextApiRequest, res: NextApiResponse) {
 
     const fileName = `${name}.txt`
     const filePath = path.join(LISTS_DIR, fileName)
+    const cleanFileName = `${name}_clean.txt`
+    const cleanFilePath = path.join(LISTS_DIR, cleanFileName)
 
     if (fs.existsSync(filePath)) {
       return res.status(400).json({ error: "A list with this name already exists" })
     }
 
+    // Write original file with emails
     fs.writeFileSync(filePath, accounts.join("\n"), "utf-8")
+
+    // Write clean file without emails
+    const cleanAccounts = accounts.map(account => {
+      const [cookies] = account.split("|")
+      return cookies.trim()
+    })
+    fs.writeFileSync(cleanFilePath, cleanAccounts.join("\n"), "utf-8")
+
     const stats = fs.statSync(filePath)
 
     return res.status(201).json({
