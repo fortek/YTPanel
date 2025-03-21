@@ -30,7 +30,6 @@ export function FileUpload() {
     const file = e.target.files[0]
     
     try {
-      // Optimize chunk size for better performance
       const chunkSize = 5 * 1024 * 1024 // 5MB chunks
       const fileSize = file.size
       let offset = 0
@@ -42,22 +41,24 @@ export function FileUpload() {
         text += chunkText
         offset += chunkSize
         
-        // Update progress more frequently
         const progress = (offset / fileSize) * 100
-        setUploadProgress(Math.min(progress, 99)) // Keep at 99% until fully processed
+        setUploadProgress(Math.min(progress, 99))
       }
 
       const accounts = text
         .split("\n")
         .filter(line => line.trim())
-        .map(line => line.trim())
+        .map(line => {
+          const [cookies, email] = line.split("|")
+          return email ? `${cookies.trim()}|${email.trim()}` : cookies.trim()
+        })
 
       if (accounts.length === 0) {
         throw new Error("The file appears to be empty")
       }
 
       await addList(listName, accounts)
-      setUploadProgress(100) // Show 100% when complete
+      setUploadProgress(100)
       setListName("")
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
@@ -67,7 +68,7 @@ export function FileUpload() {
       setError(err instanceof Error ? err.message : "Failed to process the file")
     } finally {
       setIsLoading(false)
-      setTimeout(() => setUploadProgress(0), 1000) // Reset progress after a delay
+      setTimeout(() => setUploadProgress(0), 1000)
     }
   }
 

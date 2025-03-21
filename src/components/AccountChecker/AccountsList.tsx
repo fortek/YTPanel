@@ -21,17 +21,13 @@ interface AccountsListProps {
 
 export function AccountsList({ accounts }: AccountsListProps) {
   const [accountsState, setAccountsState] = useState<Account[]>(
-    accounts.map((cookies, index) => {
-      const sidCookie = cookies.split(";").find(c => c.includes("SID="))
-      const displayId = sidCookie 
-        ? sidCookie.split("=")[1].substring(0, 15) + "..."
-        : `Account ${index + 1}`
-
+    accounts.map((line, index) => {
+      const [cookies, email] = line.split("|")
       return {
         id: index,
-        cookies,
-        displayId,
-        email: "",
+        cookies: cookies.trim(),
+        displayId: `Account ${index + 1}`,
+        email: email ? email.trim() : "",
         status: "pending"
       }
     })
@@ -55,8 +51,8 @@ export function AccountsList({ accounts }: AccountsListProps) {
         prev.map(acc =>
           acc.id === id ? {
             ...acc,
-            status: result.isValid && result.email ? "valid" : "invalid",
-            email: result.email
+            status: result.isValid ? "valid" : "invalid",
+            email: acc.email || result.email || ""
           } : acc
         )
       )
