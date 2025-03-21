@@ -2,6 +2,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  api: {
+    bodyParser: {
+      sizeLimit: '200mb'
+    },
+    responseLimit: false
+  },
   images: {
     domains: [
       'images.unsplash.com',
@@ -11,15 +17,6 @@ const nextConfig = {
       'giphy.com',
       'wikimedia.org'
     ]
-  }
-}
-
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '200mb'
-    },
-    responseLimit: false
   }
 }
 
