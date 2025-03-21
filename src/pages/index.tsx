@@ -7,7 +7,7 @@ import { Sidebar } from "@/components/AccountChecker/Sidebar"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAccountLists } from "@/contexts/AccountListsContext"
 import { Button } from "@/components/ui/button"
-import { LogOut, FileText } from "lucide-react"
+import { LogOut, FileText, FolderOpen } from "lucide-react"
 import Link from "next/link"
 
 export default function Home() {
@@ -56,6 +56,12 @@ export default function Home() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                <Link href="/uploaded_cookies">
+                  <Button variant="outline">
+                    <FolderOpen className="w-4 h-4 mr-2" />
+                    Cookies Files
+                  </Button>
+                </Link>
                 <Link href="/api-docs">
                   <Button variant="outline">
                     <FileText className="w-4 h-4 mr-2" />

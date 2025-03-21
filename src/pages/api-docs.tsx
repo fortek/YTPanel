@@ -7,6 +7,32 @@ import Link from "next/link"
 export default function ApiDocsPage() {
   const endpoints = [
     {
+      title: "Check Account",
+      method: "POST",
+      path: "/api/check-account",
+      description: "Check if a YouTube account cookie is valid",
+      requestBody: {
+        cookies: "cookie_string_here"
+      },
+      responses: {
+        200: {
+          isValid: true,
+          email: "user@example.com",
+          status: 200,
+          url: "https://www.youtube.com/account"
+        },
+        400: {
+          error: "Cookies are required"
+        },
+        401: {
+          error: "Invalid cookies"
+        },
+        500: {
+          error: "Failed to check account"
+        }
+      }
+    },
+    {
       title: "Update Cookie",
       method: "POST",
       path: "/api/lists/update-cookie",
@@ -19,7 +45,7 @@ export default function ApiDocsPage() {
       responses: {
         200: {
           success: true,
-          message: "Cookie updated successfully"
+          message: "Cookie updated successfully in both files"
         },
         400: {
           error: "fileName, newCookie and email are required"
