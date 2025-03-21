@@ -2,11 +2,11 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import fs from "fs"
 import path from "path"
+import formidable from "formidable"
 
 export const config = {
   api: {
-    bodyParser: false,
-    responseLimit: false
+    bodyParser: false
   }
 }
 
@@ -19,21 +19,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   if (req.method === "POST") {
-    return new Promise((resolve) => {
-      let rawData = ""
-      
-      req.on("data", (chunk) => {
-        rawData += chunk
-      })
-      
-      req.on("end", async () => {
+    const form = formidable({
+      maxFileSize: 200 * 1024 * 1024, // 200MB
+    })
+
+    return new Promise((resolve, reject) => {
+      form.parse(req, async (err, fields, files) => {
+        if (err) {
+          console.error("Form parsing error:", err)
+          res.status(500).json({ error: "Failed to process upload" })
+          return resolve(undefined)
+        }
+
         try {
-          const data = JSON.parse(rawData)
-          const result = await createList(data, res)
+          const name = fields.name?.[0]
+          const accountsFile = files.accountsFile?.[0]
+
+          if (!name || !accountsFile) {
+            res.status(400).json({ error: "Name and file are required" })
+            return resolve(undefined)
+          }
+
+          const accounts = fs.readFileSync(accountsFile.filepath, "utf-8")
+            .split("\n")
+            .filter(line => line.trim().length > 0)
+
+          const result = await createList({ name, accounts }, res)
           resolve(result)
         } catch (error) {
           console.error("Error processing request:", error)
-          res.status(400).json({ error: "Invalid request data" })
+          res.status(500).json({ error: "Failed to process request" })
           resolve(undefined)
         }
       })

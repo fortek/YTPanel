@@ -55,13 +55,30 @@ export function FileUpload() {
         return
       }
 
-      addList(listName, accounts)
+      const formData = new FormData()
+      formData.append("name", listName)
+      formData.append("accountsFile", file)
+
+      const response = await fetch("/api/lists", {
+        method: "POST",
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to create list" }))
+        throw new Error(errorData.error || "Failed to create list")
+      }
+
+      const newList = await response.json()
+      await addList(listName, accounts)
+      
       setListName("")
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
     } catch (err) {
-      setError("Failed to process the file. Please make sure it's a valid cookies file.")
+      console.error("Upload error:", err)
+      setError(err instanceof Error ? err.message : "Failed to process the file")
     } finally {
       setIsLoading(false)
     }
