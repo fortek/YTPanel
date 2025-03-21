@@ -28,8 +28,8 @@ export function Sidebar() {
                 <div
                   key={list.id}
                   className={cn(
-                    "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer group",
-                    activeListId === list.id && "bg-accent"
+                    "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-zinc-800/50 cursor-pointer group",
+                    activeListId === list.id && "bg-zinc-800/30 ring-1 ring-zinc-700/50"
                   )}
                   onClick={() => handleListSelect(list.id)}
                 >
