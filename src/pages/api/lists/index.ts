@@ -34,11 +34,11 @@ async function getLists(res: NextApiResponse) {
         const stats = fs.statSync(filePath)
         const content = fs.readFileSync(filePath, "utf-8")
         const accounts = content.split("\n").filter(Boolean)
-        const id = path.parse(file).name
+        const name = path.parse(file).name
         
         return {
-          id,
-          name: id,
+          id: name,
+          name,
           createdAt: stats.birthtime,
           accounts
         }
@@ -58,17 +58,21 @@ async function createList(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: "Name and accounts array are required" })
     }
 
-    const id = Date.now().toString()
-    const fileName = `${id}.txt`
+    const fileName = `${name}.txt`
     const filePath = path.join(LISTS_DIR, fileName)
+
+    // Check if file already exists
+    if (fs.existsSync(filePath)) {
+      return res.status(400).json({ error: "A list with this name already exists" })
+    }
 
     // Save accounts to file
     fs.writeFileSync(filePath, accounts.join("\n"), "utf-8")
 
     const stats = fs.statSync(filePath)
     const newList = {
-      id,
-      name: id,
+      id: name,
+      name,
       createdAt: stats.birthtime,
       accounts
     }
