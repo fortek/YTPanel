@@ -2,7 +2,6 @@
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Check, Loader2, Play } from "lucide-react"
 import { accountService } from "@/services/accountService"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -20,7 +19,7 @@ interface AccountsListProps {
   accounts: string[]
 }
 
-const ITEM_SIZE = 50 // Height of each row in pixels
+const ITEM_SIZE = 50
 
 export function AccountsList({ accounts }: AccountsListProps) {
   const [accountsState, setAccountsState] = useState<Account[]>(
