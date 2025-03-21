@@ -84,18 +84,31 @@ export function AccountsList({ accounts }: AccountsListProps) {
   const invalidCount = accountsState.filter(acc => acc.status === "invalid").length
 
   return (
-    <Card className="w-full max-w-4xl mx-auto mt-8">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="w-full max-w-4xl mx-auto mt-8 bg-gradient-to-br from-zinc-900/40 to-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 shadow-xl">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-800/50 pb-6">
         <div>
-          <CardTitle>Accounts List ({accountsState.length})</CardTitle>
-          <div className="mt-2 text-sm text-muted-foreground">
-            Valid: {validCount} · Invalid: {invalidCount} · Pending: {pendingCount}
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+            Accounts List ({accountsState.length})
+          </CardTitle>
+          <div className="mt-2 text-sm text-zinc-400 flex gap-4">
+            <span className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              Valid: {validCount}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+              Invalid: {invalidCount}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-zinc-500"></div>
+              Pending: {pendingCount}
+            </span>
           </div>
         </div>
         <Button
           onClick={checkAllAccounts}
           disabled={isCheckingAll || pendingCount === 0}
-          className="ml-4"
+          className="ml-4 bg-zinc-800 hover:bg-zinc-700 transition-colors"
         >
           {isCheckingAll ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -105,34 +118,34 @@ export function AccountsList({ accounts }: AccountsListProps) {
           Check All
         </Button>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
+      <CardContent className="overflow-x-auto p-6">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Account ID</TableHead>
-              <TableHead className="w-[300px]">Email</TableHead>
-              <TableHead className="w-[100px]">Status</TableHead>
-              <TableHead className="w-[120px] text-right">Action</TableHead>
+            <TableRow className="border-zinc-800/50">
+              <TableHead className="w-[200px] text-zinc-400">Account ID</TableHead>
+              <TableHead className="w-[300px] text-zinc-400">Email</TableHead>
+              <TableHead className="w-[100px] text-zinc-400">Status</TableHead>
+              <TableHead className="w-[120px] text-right text-zinc-400">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {accountsState.map((account) => (
-              <TableRow key={account.id}>
-                <TableCell className="font-mono text-sm truncate max-w-[200px]">
+              <TableRow key={account.id} className="border-zinc-800/50 hover:bg-zinc-900/30 transition-colors">
+                <TableCell className="font-mono text-sm truncate max-w-[200px] text-zinc-300">
                   {account.displayId}
                 </TableCell>
-                <TableCell className="font-mono text-sm truncate max-w-[300px]">
+                <TableCell className="font-mono text-sm truncate max-w-[300px] text-zinc-300">
                   {account.email || "-"}
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                     account.status === "valid" 
-                      ? "bg-green-100 text-green-700" 
+                      ? "bg-green-500/20 text-green-400 ring-1 ring-green-500/30" 
                       : account.status === "invalid"
-                      ? "bg-red-100 text-red-700"
+                      ? "bg-red-500/20 text-red-400 ring-1 ring-red-500/30"
                       : account.status === "checking"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-gray-100 text-gray-700"
+                      ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30"
+                      : "bg-zinc-500/20 text-zinc-400 ring-1 ring-zinc-500/30"
                   }`}>
                     {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
                   </span>
@@ -143,7 +156,11 @@ export function AccountsList({ accounts }: AccountsListProps) {
                     variant={account.status === "valid" ? "outline" : "default"}
                     onClick={() => checkAccount(account.id)}
                     disabled={account.status === "checking" || isCheckingAll}
-                    className="w-[100px]"
+                    className={`w-[100px] transition-colors ${
+                      account.status === "valid" 
+                        ? "border-green-500/30 hover:bg-green-500/20" 
+                        : "bg-zinc-800 hover:bg-zinc-700"
+                    }`}
                   >
                     {account.status === "checking" ? (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
