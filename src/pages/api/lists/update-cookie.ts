@@ -46,18 +46,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Update original file with emails
     fs.writeFileSync(filePath, updatedLines.join("\n"))
 
-    // Update clean file without emails
-    if (fs.existsSync(cleanFilePath)) {
-      let cleanContent = fs.readFileSync(cleanFilePath, "utf-8")
-      const cleanLines = cleanContent.split("\n")
-      const updatedCleanLines = cleanLines.map((line, index) => {
-        if (index === lines.findIndex(l => l.split("|")[1]?.trim() === email.trim())) {
-          return updatedCookieOnly
-        }
-        return line
+    // Create clean file if it doesn't exist
+    if (!fs.existsSync(cleanFilePath)) {
+      const cleanAccounts = lines.map(line => {
+        const [cookies] = line.split("|")
+        return cookies.trim()
       })
-      fs.writeFileSync(cleanFilePath, updatedCleanLines.join("\n"))
+      fs.writeFileSync(cleanFilePath, cleanAccounts.join("\n"))
     }
+
+    // Update clean file
+    let cleanContent = fs.readFileSync(cleanFilePath, "utf-8")
+    const cleanLines = cleanContent.split("\n")
+    const updatedCleanLines = cleanLines.map((line, index) => {
+      if (index === lines.findIndex(l => l.split("|")[1]?.trim() === email.trim())) {
+        return updatedCookieOnly
+      }
+      return line
+    })
+    fs.writeFileSync(cleanFilePath, updatedCleanLines.join("\n"))
 
     return res.status(200).json({ 
       success: true,
