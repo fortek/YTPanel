@@ -13,7 +13,7 @@ interface AccountListsContextType {
   activeListId: string | null
   activeList: AccountList | null
   addList: (name: string, accounts: string[]) => Promise<void>
-  setActiveList: (id: string | null) => Promise<void>
+  setActiveList: (id: string | null) => void
   removeList: (id: string) => Promise<void>
   renameList: (id: string, newName: string) => Promise<void>
   downloadList: (id: string) => Promise<void>
@@ -113,7 +113,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       const newList = await response.json()
       const listWithDate = { ...newList, createdAt: new Date(newList.createdAt) }
       setLists(prev => [...prev, listWithDate])
-      await setActiveList(newList.id)
+      setActiveListId(newList.id)
     } catch (error) {
       console.error("Error adding list:", error)
       throw error
