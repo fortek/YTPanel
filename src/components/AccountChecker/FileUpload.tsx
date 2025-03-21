@@ -1,6 +1,7 @@
 
 import { ChangeEvent, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload } from "lucide-react"
@@ -30,32 +31,37 @@ export function FileUpload() {
       const accounts = text
         .split("\n")
         .filter(line => line.trim().length > 0)
-        .map(line => line.trim())
+        .map(line => {
+          try {
+            const cookies = line.split(";")
+            const relevantCookies = cookies.filter(cookie => 
+              cookie.includes("SID") || 
+              cookie.includes("HSID") || 
+              cookie.includes("SSID") ||
+              cookie.includes("LOGIN_INFO")
+            )
+            
+            if (relevantCookies.length < 2) return null
 
-      const formData = new FormData()
-      formData.append("name", listName)
-      formData.append("accountsFile", file)
+            return line.trim()
+          } catch {
+            return null
+          }
+        })
+        .filter((account): account is string => account !== null)
 
-      const response = await fetch("/api/lists", {
-        method: "POST",
-        body: formData
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Failed to create list" }))
-        throw new Error(errorData.error || "Failed to create list")
+      if (accounts.length === 0) {
+        setError("No valid YouTube cookies found in the file. Please check the format.")
+        return
       }
 
-      const newList = await response.json()
-      await addList(listName, accounts)
-      
+      addList(listName, accounts)
       setListName("")
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
     } catch (err) {
-      console.error("Upload error:", err)
-      setError(err instanceof Error ? err.message : "Failed to process the file")
+      setError("Failed to process the file. Please make sure it's a valid cookies file.")
     } finally {
       setIsLoading(false)
     }
