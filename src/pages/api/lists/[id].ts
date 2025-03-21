@@ -13,12 +13,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   switch (req.method) {
+    case "GET":
+      return getList(id, res)
     case "PATCH":
       return renameList(id, req, res)
     case "DELETE":
       return deleteList(id, res)
     default:
       return res.status(405).json({ error: "Method not allowed" })
+  }
+}
+
+async function getList(id: string, res: NextApiResponse) {
+  try {
+    const filePath = path.join(LISTS_DIR, `${id}.txt`)
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "List not found" })
+    }
+
+    const stats = fs.statSync(filePath)
+    const content = fs.readFileSync(filePath, "utf-8")
+    const accounts = content.split("\n").filter(Boolean)
+
+    return res.status(200).json({
+      id,
+      name: id,
+      createdAt: stats.birthtime,
+      accounts
+    })
+  } catch (error) {
+    console.error("Error reading list:", error)
+    return res.status(500).json({ error: "Failed to read list" })
   }
 }
 

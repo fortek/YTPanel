@@ -1,3 +1,4 @@
+
 import { NextApiRequest, NextApiResponse } from "next"
 import fs from "fs"
 import path from "path"
@@ -6,7 +7,7 @@ export const config = {
   api: {
     responseLimit: false,
     bodyParser: {
-      sizeLimit: "500mb", // Increase size limit for large files
+      sizeLimit: "500mb",
     },
   },
 }
@@ -39,15 +40,12 @@ async function getLists(res: NextApiResponse) {
       .map(file => {
         const filePath = path.join(LISTS_DIR, file)
         const stats = fs.statSync(filePath)
-        const content = fs.readFileSync(filePath, "utf-8")
-        const accounts = content.split("\n").filter(Boolean)
         const name = path.parse(file).name
         
         return {
           id: name,
           name,
-          createdAt: stats.birthtime,
-          accounts
+          createdAt: stats.birthtime
         }
       })
 
@@ -83,8 +81,7 @@ async function createList(req: NextApiRequest, res: NextApiResponse) {
     return res.status(201).json({
       id: name,
       name,
-      createdAt: stats.birthtime,
-      accounts
+      createdAt: stats.birthtime
     })
   } catch (error) {
     console.error("Error creating list:", error)
