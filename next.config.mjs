@@ -2,12 +2,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  api: {
-    bodyParser: {
-      sizeLimit: '200mb'
-    },
-    responseLimit: false
-  },
   images: {
     domains: [
       'images.unsplash.com',

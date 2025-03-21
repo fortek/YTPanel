@@ -5,9 +5,7 @@ import path from "path"
 
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '200mb'
-    },
+    bodyParser: false,
     responseLimit: false
   }
 }
@@ -16,6 +14,33 @@ const LISTS_DIR = path.join(process.cwd(), "data", "lists")
 const METADATA_FILE = path.join(LISTS_DIR, "metadata.json")
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === "GET") {
+    return getLists(req, res)
+  }
+  
+  if (req.method === "POST") {
+    let body = ""
+    req.on("data", chunk => {
+      body += chunk.toString()
+    })
+
+    req.on("end", async () => {
+      try {
+        const data = JSON.parse(body)
+        return await createList(data, res)
+      } catch (error) {
+        console.error("Error parsing request body:", error)
+        return res.status(400).json({ error: "Invalid request body" })
+      }
+    })
+
+    return
+  }
+
+  return res.status(405).json({ error: "Method not allowed" })
+}
+
+async function getLists(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (!fs.existsSync(LISTS_DIR)) {
       fs.mkdirSync(LISTS_DIR, { recursive: true })
@@ -26,25 +51,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       fs.writeFileSync(METADATA_FILE, JSON.stringify([]), "utf-8")
     }
 
-    switch (req.method) {
-      case "GET":
-        return getLists(req, res)
-      case "POST":
-        return createList(req, res)
-      default:
-        return res.status(405).json({ error: "Method not allowed" })
-    }
-  } catch (error) {
-    console.error("Lists API error:", error)
-    return res.status(500).json({ 
-      error: "Server configuration error",
-      details: error instanceof Error ? error.message : "Unknown error"
-    })
-  }
-}
-
-async function getLists(req: NextApiRequest, res: NextApiResponse) {
-  try {
     const metadata = JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"))
     const lists = await Promise.all(metadata.map(async (list: any) => {
       try {
@@ -66,12 +72,16 @@ async function getLists(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-async function createList(req: NextApiRequest, res: NextApiResponse) {
+async function createList(data: any, res: NextApiResponse) {
   try {
-    const { name, accounts } = req.body
+    const { name, accounts } = data
     
     if (!name || !accounts || !Array.isArray(accounts)) {
       return res.status(400).json({ error: "Valid name and accounts array are required" })
+    }
+
+    if (!fs.existsSync(LISTS_DIR)) {
+      fs.mkdirSync(LISTS_DIR, { recursive: true })
     }
 
     const listId = Date.now().toString()
@@ -84,10 +94,6 @@ async function createList(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-      if (!fs.existsSync(LISTS_DIR)) {
-        fs.mkdirSync(LISTS_DIR, { recursive: true })
-      }
-
       fs.writeFileSync(accountsPath, accounts.join("\n"), "utf-8")
 
       const metadata = JSON.parse(fs.readFileSync(METADATA_FILE, "utf-8"))
