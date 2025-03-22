@@ -176,90 +176,82 @@ export default function ApiDocsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-900 to-zinc-950 py-8">
-      <div className="max-w-[1400px] mx-auto px-6">
-        <div className="flex items-center justify-between mb-8 bg-zinc-900/50 p-6 rounded-lg backdrop-blur-sm border border-zinc-800/50">
+    <div className="min-h-screen bg-zinc-950 py-8 px-4">
+      <div className="max-w-[1200px] mx-auto">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-zinc-50 mb-1">API Documentation</h1>
-            <p className="text-zinc-400">Complete reference for all available API endpoints</p>
+            <h1 className="text-2xl font-bold text-zinc-50">API Documentation</h1>
+            <p className="text-sm text-zinc-400">Complete reference for all available API endpoints</p>
           </div>
           <Link href="/">
-            <Button variant="outline" className="border-zinc-700 hover:bg-zinc-800/50 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" />Back to App
+            <Button variant="outline" size="sm" className="border-zinc-800 hover:bg-zinc-900">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to App
             </Button>
           </Link>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6">
           {endpoints.map((endpoint, index) => (
-            <div key={index} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-6">
-                <div className="bg-zinc-900/30 border border-zinc-800/30 rounded-lg p-6 backdrop-blur-sm">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-md ${
-                      endpoint.method === "GET" 
-                        ? "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20"
-                        : "bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
-                    }`}>
-                      {endpoint.method}
-                    </span>
-                    <code className="px-2.5 py-1 bg-zinc-800/50 rounded-md text-zinc-300 font-mono text-sm">
-                      {endpoint.path}
-                    </code>
-                  </div>
-                  <h2 className="text-xl font-semibold text-zinc-100 mb-2">{endpoint.title}</h2>
-                  <p className="text-zinc-400">{endpoint.description}</p>
-                </div>
-                {endpoint.requestBody && (
-                  <div className="bg-zinc-900/30 border border-zinc-800/30 rounded-lg p-6 backdrop-blur-sm">
-                    <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2 mb-4">
-                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                      Request Body
-                    </h3>
-                    <pre className="bg-zinc-800/50 p-3 rounded-md overflow-x-auto text-sm">
-                      <code className="text-zinc-300">
-                        {JSON.stringify(endpoint.requestBody, null, 2)}
-                      </code>
-                    </pre>
-                  </div>
-                )}
-              </div>
-              <div className="bg-zinc-900/30 border border-zinc-800/30 rounded-lg p-6 backdrop-blur-sm">
-                <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2 mb-4">
-                  <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                  Responses
-                </h3>
-                <div className="space-y-4">
-                  {Object.entries(endpoint.responses).map(([code, response]) => (
-                    <div key={code} className="relative group">
-                      <span className={`absolute -left-2 top-3 w-1.5 h-1.5 rounded-full ${
-                        code.startsWith("2")
-                          ? "bg-green-400"
-                          : code.startsWith("4")
-                          ? "bg-amber-400"
-                          : "bg-red-400"
-                      }`}></span>
-                      <div className="pl-3">
-                        <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-md mb-2 ${
-                          code.startsWith("2")
-                            ? "bg-green-500/10 text-green-400"
-                            : code.startsWith("4")
-                            ? "bg-amber-500/10 text-amber-400"
-                            : "bg-red-500/10 text-red-400"
-                        }`}>
-                          {code}
-                        </span>
-                        <pre className="bg-zinc-800/50 p-3 rounded-md overflow-x-auto text-sm">
+            <Card key={index} className="bg-zinc-900 border-zinc-800">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-8">
+                  {/* Левая колонка: Описание эндпоинта */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                        endpoint.method === "GET" 
+                          ? "bg-blue-500/10 text-blue-400"
+                          : "bg-green-500/10 text-green-400"
+                      }`}>
+                        {endpoint.method}
+                      </span>
+                      <code className="text-sm text-zinc-300">{endpoint.path}</code>
+                    </div>
+                    <h2 className="text-lg font-semibold text-zinc-100 mb-2">{endpoint.title}</h2>
+                    <p className="text-sm text-zinc-400 mb-4">{endpoint.description}</p>
+                    
+                    {endpoint.requestBody && (
+                      <div className="mt-4">
+                        <h3 className="text-sm font-medium text-zinc-300 mb-2">Request Body</h3>
+                        <pre className="bg-zinc-950 p-3 rounded text-sm overflow-x-auto">
                           <code className="text-zinc-300">
-                            {JSON.stringify(response, null, 2)}
+                            {JSON.stringify(endpoint.requestBody, null, 2)}
                           </code>
                         </pre>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Правая колонка: Ответы */}
+                  <div>
+                    <h3 className="text-sm font-medium text-zinc-300 mb-3">Responses</h3>
+                    <div className="space-y-3">
+                      {Object.entries(endpoint.responses).map(([code, response]) => (
+                        <div key={code} className="bg-zinc-950 rounded p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                              code.startsWith("2") 
+                                ? "bg-green-500/10 text-green-400"
+                                : code.startsWith("4")
+                                ? "bg-amber-500/10 text-amber-400"
+                                : "bg-red-500/10 text-red-400"
+                            }`}>
+                              {code}
+                            </span>
+                          </div>
+                          <pre className="text-sm overflow-x-auto">
+                            <code className="text-zinc-300">
+                              {JSON.stringify(response, null, 2)}
+                            </code>
+                          </pre>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
