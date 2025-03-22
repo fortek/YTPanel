@@ -20,6 +20,13 @@ module.exports = {
     kill_timeout: 3000,
     wait_ready: true,
     listen_timeout: 10000,
-    exp_backoff_restart_delay: 100
+    exp_backoff_restart_delay: 100,
+    instance_var: 'INSTANCE_ID',
+    exec_mode: 'fork',
+    interpreter: 'node',
+    interpreter_args: '--trace-warnings',
+    node_args: '--trace-warnings',
+    log_type: 'json',
+    time: true
   }]
 };

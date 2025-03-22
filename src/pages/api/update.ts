@@ -94,7 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Проверяем логи процесса
     console.log('Checking process logs...')
-    const { stdout: pm2Logs } = await execAsync('pm2 logs ytpanel --lines 50')
+    const { stdout: pm2Logs } = await execAsync('pm2 logs ytpanel --lines 50 --json')
     console.log('Process logs:', pm2Logs)
 
     // Проверяем файлы логов
@@ -109,6 +109,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Error log:', errorLog)
     console.log('Output log:', outLog)
 
+    // Проверяем детальную информацию о процессе
+    console.log('Checking process details...')
+    const { stdout: pm2Describe } = await execAsync('pm2 describe ytpanel')
+    console.log('Process details:', pm2Describe)
+
     console.log('Update process completed successfully')
     return res.status(200).json({ 
       message: 'Update successful',
@@ -119,7 +124,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         pm2Status,
         pm2Logs,
         errorLog,
-        outLog
+        outLog,
+        pm2Describe
       }
     })
   } catch (error) {

@@ -1,0 +1,80 @@
+2025-03-22 11:46:29: C:\PROGRAM FILES\NODEJS\NPM.CMD:1
+2025-03-22 11:46:29: :: Created by npm, please don't edit manually.
+2025-03-22 11:46:29: ^
+2025-03-22 11:46:29: 
+2025-03-22 11:46:29: SyntaxError: Unexpected token ':'
+2025-03-22 11:46:29:     at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+2025-03-22 11:46:29:     at Module._compile (node:internal/modules/cjs/loader:1528:20)
+2025-03-22 11:46:29:     at Object..js (node:internal/modules/cjs/loader:1706:10)
+2025-03-22 11:46:29:     at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-03-22 11:46:29:     at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-03-22 11:46:29:     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+2025-03-22 11:46:29:     at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+2025-03-22 11:46:29:     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)
+2025-03-22 11:46:29:     at node:internal/main/run_main_module:36:49
+2025-03-22 11:46:29: 
+2025-03-22 11:46:29: Node.js v22.14.0
+2025-03-22 11:46:29: C:\PROGRAM FILES\NODEJS\NPM.CMD:1
+2025-03-22 11:46:29: :: Created by npm, please don't edit manually.
+2025-03-22 11:46:29: ^
+2025-03-22 11:46:29: 
+2025-03-22 11:46:29: SyntaxError: Unexpected token ':'
+2025-03-22 11:46:29:     at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+2025-03-22 11:46:29:     at Module._compile (node:internal/modules/cjs/loader:1528:20)
+2025-03-22 11:46:29:     at Object..js (node:internal/modules/cjs/loader:1706:10)
+2025-03-22 11:46:29:     at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-03-22 11:46:29:     at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-03-22 11:46:29:     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+2025-03-22 11:46:29:     at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+2025-03-22 11:46:29:     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)
+2025-03-22 11:46:29:     at node:internal/main/run_main_module:36:49
+2025-03-22 11:46:29: 
+2025-03-22 11:46:29: Node.js v22.14.0
+2025-03-22 11:46:29: C:\PROGRAM FILES\NODEJS\NPM.CMD:1
+2025-03-22 11:46:29: :: Created by npm, please don't edit manually.
+2025-03-22 11:46:29: ^
+2025-03-22 11:46:29: 
+2025-03-22 11:46:29: SyntaxError: Unexpected token ':'
+2025-03-22 11:46:29:     at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+2025-03-22 11:46:29:     at Module._compile (node:internal/modules/cjs/loader:1528:20)
+2025-03-22 11:46:29:     at Object..js (node:internal/modules/cjs/loader:1706:10)
+2025-03-22 11:46:29:     at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-03-22 11:46:29:     at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-03-22 11:46:29:     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+2025-03-22 11:46:29:     at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+2025-03-22 11:46:29:     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)
+2025-03-22 11:46:29:     at node:internal/main/run_main_module:36:49
+2025-03-22 11:46:29: 
+2025-03-22 11:46:29: Node.js v22.14.0
+2025-03-22 11:46:30: C:\PROGRAM FILES\NODEJS\NPM.CMD:1
+2025-03-22 11:46:30: :: Created by npm, please don't edit manually.
+2025-03-22 11:46:30: ^
+2025-03-22 11:46:30: 
+2025-03-22 11:46:30: SyntaxError: Unexpected token ':'
+2025-03-22 11:46:30:     at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+2025-03-22 11:46:30:     at Module._compile (node:internal/modules/cjs/loader:1528:20)
+2025-03-22 11:46:30:     at Object..js (node:internal/modules/cjs/loader:1706:10)
+2025-03-22 11:46:30:     at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-03-22 11:46:30:     at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-03-22 11:46:30:     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+2025-03-22 11:46:30:     at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+2025-03-22 11:46:30:     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)
+2025-03-22 11:46:30:     at node:internal/main/run_main_module:36:49
+2025-03-22 11:46:30: 
+2025-03-22 11:46:30: Node.js v22.14.0
+2025-03-22 11:46:30: C:\PROGRAM FILES\NODEJS\NPM.CMD:1
+2025-03-22 11:46:30: :: Created by npm, please don't edit manually.
+2025-03-22 11:46:30: ^
+2025-03-22 11:46:30: 
+2025-03-22 11:46:30: SyntaxError: Unexpected token ':'
+2025-03-22 11:46:30:     at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+2025-03-22 11:46:30:     at Module._compile (node:internal/modules/cjs/loader:1528:20)
+2025-03-22 11:46:30:     at Object..js (node:internal/modules/cjs/loader:1706:10)
+2025-03-22 11:46:30:     at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-03-22 11:46:30:     at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-03-22 11:46:30:     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+2025-03-22 11:46:30:     at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+2025-03-22 11:46:30:     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)
+2025-03-22 11:46:30:     at node:internal/main/run_main_module:36:49
+2025-03-22 11:46:30: 
+2025-03-22 11:46:30: Node.js v22.14.0
