@@ -18,11 +18,10 @@ interface FilePreview {
 interface FileUploadProps {
   onFileSelect: (file: File, name: string) => Promise<void>
   accept?: string
-  maxSize?: number
   showNameInput?: boolean
 }
 
-export function FileUpload({ onFileSelect, accept = ".txt", maxSize = 10 * 1024 * 1024, showNameInput = true }: FileUploadProps) {
+export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true }: FileUploadProps) {
   const { addList } = useAccountLists()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,11 +63,6 @@ export function FileUpload({ onFileSelect, accept = ".txt", maxSize = 10 * 1024 
   const handleFileSelect = async (file: File) => {
     if (!file.name.endsWith(accept)) {
       setError(`Пожалуйста, выберите файл с расширением ${accept}`)
-      return
-    }
-
-    if (file.size > maxSize) {
-      setError(`Размер файла не должен превышать ${formatFileSize(maxSize)}`)
       return
     }
 

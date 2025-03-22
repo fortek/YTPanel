@@ -5,7 +5,7 @@ import { useAccountLists } from "@/contexts/AccountListsContext"
 import { formatDistanceToNow } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Download, Loader2, Network } from "lucide-react"
+import { Pencil, Trash2, Download, Loader2, Network, Settings } from "lucide-react"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -134,10 +134,10 @@ export function Sidebar() {
           <Button
             variant="ghost"
             className="w-full justify-start"
-            onClick={() => router.push("/proxies")}
+            onClick={() => router.push("/settings")}
           >
-            <Network className="h-4 w-4 mr-2" />
-            Управление прокси
+            <Settings className="h-4 w-4 mr-2" />
+            Настройки
           </Button>
         </div>
       </div>
