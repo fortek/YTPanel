@@ -89,7 +89,7 @@ export function Sidebar() {
       }
 
       const data = await response.json()
-      toast.success(`Update completed successfully. Project path: ${data.details.projectRoot}`)
+      toast.success(data.message || 'Update completed successfully')
 
       // Delay before reload
       setTimeout(() => {
