@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,15 +12,21 @@ interface Account {
   cookies: string
   email: string
   status: "pending" | "checking" | "valid" | "invalid"
+  proxy?: {
+    used: boolean
+    address: string | null
+    port: string | null
+  }
 }
 
 interface AccountsListProps {
   accounts: string[]
+  proxy?: string
 }
 
 const ITEM_SIZE = 56
 
-export function AccountsList({ accounts }: AccountsListProps) {
+export function AccountsList({ accounts, proxy }: AccountsListProps) {
   const [accountsState, setAccountsState] = useState<Account[]>(
     accounts.map((line, index) => {
       const [cookies, email] = line.split("|")
@@ -50,7 +55,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
       const account = accountsState.find(acc => acc.id === id)
       if (!account) return false
 
-      const result = await accountService.checkAccount(account.cookies)
+      const result = await accountService.checkAccount(account.cookies, proxy)
       
       if (stopCheckingRef.current) {
         setAccountsState(prev =>
@@ -66,7 +71,8 @@ export function AccountsList({ accounts }: AccountsListProps) {
           acc.id === id ? {
             ...acc,
             status: result.isValid ? "valid" : "invalid",
-            email: acc.email || result.email || ""
+            email: acc.email || result.email || "",
+            proxy: result.proxy
           } : acc
         )
       )
@@ -120,7 +126,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
     const account = accountsState[index]
     return (
       <div style={style} className="flex items-center px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-        <div className="grid grid-cols-[2fr,2fr,1fr,1fr] gap-4 w-full items-center">
+        <div className="grid grid-cols-[2fr,2fr,1fr,1fr,1fr] gap-4 w-full items-center">
           <div className="overflow-hidden">
             <TooltipProvider>
               <Tooltip>
@@ -165,6 +171,24 @@ export function AccountsList({ accounts }: AccountsListProps) {
             }`}>
               {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
             </span>
+          </div>
+          <div className="text-sm text-zinc-500 dark:text-zinc-400">
+            {account.proxy?.used ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help">
+                      {account.proxy.address}:{account.proxy.port}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Прокси использован для проверки</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              "Без прокси"
+            )}
           </div>
           <div className="text-right">
             <Button
@@ -228,13 +252,14 @@ export function AccountsList({ accounts }: AccountsListProps) {
           )}
         </Button>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent>
         <div className="flex flex-col">
           <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
-            <div className="grid grid-cols-[2fr,2fr,1fr,1fr] gap-4">
+            <div className="grid grid-cols-[2fr,2fr,1fr,1fr,1fr] gap-4">
               <div className="text-sm font-medium text-zinc-900 dark:text-zinc-300">Cookies</div>
               <div className="text-sm font-medium text-zinc-900 dark:text-zinc-300">Email</div>
               <div className="text-sm font-medium text-zinc-900 dark:text-zinc-300">Status</div>
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-300">Proxy</div>
               <div className="text-sm font-medium text-right text-zinc-900 dark:text-zinc-300">Action</div>
             </div>
           </div>
