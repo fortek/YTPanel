@@ -40,15 +40,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Проверяем наличие удаленного репозитория
+    let hasRemote = false
     try {
-      await execAsync('git remote -v', {
+      const { stdout } = await execAsync('git remote -v', {
         cwd: projectRoot
       })
+      hasRemote = stdout.trim().length > 0
     } catch (error) {
+      console.log('No remote repository found')
+    }
+
+    if (!hasRemote) {
       // Если удаленного репозитория нет, пропускаем Git операции
-      console.log('No remote repository found. Skipping Git operations.')
-      // Устанавливаем зависимости
-      console.log('Installing dependencies...')
+      console.log('Skipping Git operations. Installing dependencies...')
       await execAsync('npm install', {
         cwd: projectRoot
       })
