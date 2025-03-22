@@ -54,9 +54,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Запускаем next.js в режиме разработки в фоновом режиме
     console.log('Starting Next.js in development mode...')
     if (process.platform === 'win32') {
-      await execAsync('start /B npm run dev', {
+      // Создаем bat-файл для запуска Next.js
+      const batContent = '@echo off\ncd /d "%~dp0"\nnpm run dev'
+      const batPath = path.join(projectRoot, 'start-dev.bat')
+      const fs = require('fs')
+      fs.writeFileSync(batPath, batContent)
+
+      // Запускаем bat-файл в скрытом режиме
+      await execAsync('start /min "" cmd /c start-dev.bat', {
         cwd: projectRoot,
-        shell: 'cmd.exe',
         windowsHide: true
       })
     } else {

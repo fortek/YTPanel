@@ -78,12 +78,12 @@ export function Sidebar() {
         throw new Error(data.details || data.error || 'Failed to update')
       }
 
-      toast.success("Обновление успешно завершено. Страница будет перезагружена через 5 секунд.")
+      toast.success("Обновление успешно завершено. Страница будет перезагружена через 10 секунд.")
       
-      // Даем время процессу Next.js запуститься
+      // Даем больше времени процессу Next.js запуститься
       setTimeout(() => {
         window.location.reload()
-      }, 5000)
+      }, 10000)
     } catch (error) {
       toast.error(`Ошибка при обновлении: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
