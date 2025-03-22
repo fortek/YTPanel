@@ -9,6 +9,15 @@ const execAsync = promisify(exec)
 // Кэш для хранения статуса обновления
 let updateInProgress = false
 
+async function isGitInstalled(): Promise<boolean> {
+  try {
+    await execAsync('git --version')
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -22,113 +31,73 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
   }
 
+  const projectRoot = process.cwd()
+  console.log('Project root:', projectRoot)
+
   try {
-    updateInProgress = true
+    // Проверяем, установлен ли Git
+    const gitInstalled = await isGitInstalled()
+    if (!gitInstalled) {
+      return res.status(400).json({ 
+        error: 'Git is not installed',
+        details: 'Please install Git from https://git-scm.com/downloads and restart the application'
+      })
+    }
 
-    // Получаем путь к проекту
-    const projectRoot = process.cwd()
-    console.log('Project root:', projectRoot)
-
-    // Проверяем наличие Git репозитория
+    // Проверяем наличие .git директории
     const gitDir = path.join(projectRoot, '.git')
-    if (!fs.existsSync(gitDir)) {
+    const isGitRepo = fs.existsSync(gitDir)
+
+    if (!isGitRepo) {
       console.log('Git repository not found. Initializing...')
-      
-      // Инициализируем Git репозиторий
-      await execAsync('git init', {
-        cwd: projectRoot,
-        maxBuffer: 10 * 1024 * 1024 // Увеличиваем буфер для больших репозиториев
-      })
-
-      // Добавляем все файлы в Git
-      await execAsync('git add .', {
-        cwd: projectRoot,
-        maxBuffer: 10 * 1024 * 1024
-      })
-
-      // Создаем первый коммит
-      await execAsync('git commit -m "Initial commit"', {
-        cwd: projectRoot,
-        maxBuffer: 10 * 1024 * 1024
-      })
-
-      console.log('Git repository initialized successfully')
+      try {
+        await execAsync('git init', { cwd: projectRoot })
+        console.log('Git repository initialized successfully')
+      } catch (error: any) {
+        console.error('Error initializing git repository:', error)
+        return res.status(500).json({ 
+          error: 'Failed to initialize git repository',
+          details: error.message
+        })
+      }
     }
 
-    // Проверяем наличие удаленного репозитория
-    let hasRemote = false
     try {
-      const { stdout } = await execAsync('git remote -v', {
-        cwd: projectRoot,
-        maxBuffer: 10 * 1024 * 1024
-      })
-      hasRemote = stdout.trim().length > 0
-    } catch (error) {
-      console.log('No remote repository found')
-    }
+      // Проверяем наличие удаленного репозитория
+      const { stdout: remoteUrl } = await execAsync('git config --get remote.origin.url', { cwd: projectRoot })
+      
+      if (remoteUrl.trim()) {
+        // Если есть удаленный репозиторий, выполняем git операции
+        await execAsync('git fetch origin', { cwd: projectRoot })
+        await execAsync('git reset --hard origin/main', { cwd: projectRoot })
+        await execAsync('git clean -f -d', { cwd: projectRoot })
+      }
 
-    if (!hasRemote) {
-      // Если удаленного репозитория нет, пропускаем Git операции
-      console.log('Skipping Git operations. Installing dependencies...')
-      await execAsync('npm install', {
-        cwd: projectRoot,
-        maxBuffer: 10 * 1024 * 1024
-      })
+      // В любом случае устанавливаем зависимости
+      console.log('Installing dependencies...')
+      await execAsync('npm install', { cwd: projectRoot })
+      console.log('Dependencies installed successfully')
 
-      updateInProgress = false
       return res.status(200).json({ 
-        message: 'Update successful (local repository)',
-        details: {
-          projectRoot
-        }
+        success: true,
+        message: remoteUrl.trim() 
+          ? 'Project updated and dependencies installed successfully'
+          : 'Dependencies installed successfully (no remote repository found)'
+      })
+
+    } catch (error: any) {
+      console.error('Error during update:', error)
+      return res.status(500).json({ 
+        error: 'Update error',
+        details: error.message
       })
     }
 
-    // Принудительно получаем изменения из Git
-    console.log('Fetching changes from Git...')
-    await execAsync('git fetch origin', {
-      cwd: projectRoot,
-      maxBuffer: 10 * 1024 * 1024
-    })
-
-    // Сбрасываем все локальные изменения
-    console.log('Resetting local changes...')
-    await execAsync('git reset --hard origin/main', {
-      cwd: projectRoot,
-      maxBuffer: 10 * 1024 * 1024
-    })
-
-    // Очищаем неотслеживаемые файлы
-    console.log('Cleaning untracked files...')
-    await execAsync('git clean -fd', {
-      cwd: projectRoot,
-      maxBuffer: 10 * 1024 * 1024
-    })
-
-    // Устанавливаем зависимости с оптимизацией для многоядерных процессоров
-    console.log('Installing dependencies...')
-    await execAsync('npm install --prefer-offline --no-audit --no-fund', {
-      cwd: projectRoot,
-      maxBuffer: 10 * 1024 * 1024,
-      env: {
-        ...process.env,
-        NODE_OPTIONS: '--max-old-space-size=4096' // Увеличиваем лимит памяти для npm
-      }
-    })
-
-    updateInProgress = false
-    return res.status(200).json({ 
-      message: 'Update successful',
-      details: {
-        projectRoot
-      }
-    })
-  } catch (error) {
-    updateInProgress = false
-    console.error('Update error:', error)
+  } catch (error: any) {
+    console.error('Unexpected error:', error)
     return res.status(500).json({ 
-      error: 'Failed to update',
-      details: error instanceof Error ? error.message : String(error)
+      error: 'Unexpected error',
+      details: error.message
     })
   }
 } 
