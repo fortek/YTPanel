@@ -29,3 +29,23 @@
  GET / 200 in 9ms
  GET / 200 in 7ms
 [?25h
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:53:53","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:53:53","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:53:53","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:53:53","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:53:54","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:53:54","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:53:54","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:53:54","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:53:55","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:53:55","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:53:55","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:53:55","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:53:56","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:53:56","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:53:56","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:53:56","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:53:57","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:53:58","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:53:58","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:53:58","type":"out","process_id":0,"app_name":"ytpanel"}
