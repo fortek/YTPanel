@@ -1,6 +1,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import path from 'path'
 
 const execAsync = promisify(exec)
 
@@ -10,21 +11,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Получаем изменения из Git
-    console.log('Pulling changes from Git...')
-    const { stdout, stderr } = await execAsync('git pull origin main')
-    console.log('Git pull output:', stdout)
-    console.log('Git pull stderr:', stderr)
+    // Получаем путь к проекту
+    const projectRoot = process.cwd()
+    console.log('Project root:', projectRoot)
+
+    // Принудительно получаем изменения из Git
+    console.log('Fetching changes from Git...')
+    await execAsync('git fetch origin', {
+      cwd: projectRoot
+    })
+
+    // Сбрасываем все локальные изменения
+    console.log('Resetting local changes...')
+    await execAsync('git reset --hard origin/main', {
+      cwd: projectRoot
+    })
+
+    // Очищаем неотслеживаемые файлы
+    console.log('Cleaning untracked files...')
+    await execAsync('git clean -fd', {
+      cwd: projectRoot
+    })
 
     // Устанавливаем зависимости
     console.log('Installing dependencies...')
-    await execAsync('npm install')
+    await execAsync('npm install', {
+      cwd: projectRoot
+    })
 
     return res.status(200).json({ 
       message: 'Update successful',
       details: {
-        stdout,
-        stderr
+        projectRoot
       }
     })
   } catch (error) {
