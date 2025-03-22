@@ -2,6 +2,7 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
+import fs from 'fs'
 
 const execAsync = promisify(exec)
 
@@ -13,6 +14,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const projectRoot = process.cwd()
     console.log('Project root:', projectRoot)
+
+    // Создаем директорию для логов если её нет
+    const logsDir = path.join(projectRoot, 'logs')
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir)
+    }
 
     // Проверяем статус репозитория
     console.log('Checking git status...')
@@ -77,6 +84,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
     console.log('PM2 start output:', pm2Start)
 
+    // Ждем немного, чтобы процесс успел запуститься
+    await new Promise(resolve => setTimeout(resolve, 5000))
+
     // Проверяем статус процесса
     console.log('Checking process status...')
     const { stdout: pm2Status } = await execAsync('pm2 list')
@@ -84,8 +94,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Проверяем логи процесса
     console.log('Checking process logs...')
-    const { stdout: pm2Logs } = await execAsync('pm2 logs ytpanel --lines 20')
+    const { stdout: pm2Logs } = await execAsync('pm2 logs ytpanel --lines 50')
     console.log('Process logs:', pm2Logs)
+
+    // Проверяем файлы логов
+    console.log('Checking log files...')
+    const errorLog = fs.existsSync(path.join(logsDir, 'err.log')) 
+      ? fs.readFileSync(path.join(logsDir, 'err.log'), 'utf-8')
+      : 'Error log file not found'
+    const outLog = fs.existsSync(path.join(logsDir, 'out.log'))
+      ? fs.readFileSync(path.join(logsDir, 'out.log'), 'utf-8')
+      : 'Output log file not found'
+
+    console.log('Error log:', errorLog)
+    console.log('Output log:', outLog)
 
     console.log('Update process completed successfully')
     return res.status(200).json({ 
@@ -95,7 +117,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         stdout,
         stderr,
         pm2Status,
-        pm2Logs
+        pm2Logs,
+        errorLog,
+        outLog
       }
     })
   } catch (error) {
