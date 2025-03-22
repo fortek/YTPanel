@@ -56,26 +56,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Запускаем next.js в режиме разработки
     console.log('Starting Next.js in development mode...')
     if (process.platform === 'win32') {
-      // Создаем командный файл для запуска
-      const cmdContent = `
-@echo off
-cd /d "${projectRoot}"
-echo Starting Next.js in development mode...
-start "Next.js Dev Server" /min cmd /c "npm run dev"
-      `.trim()
-      
-      const cmdPath = path.join(projectRoot, 'start-dev.cmd')
-      const fs = require('fs')
-      fs.writeFileSync(cmdPath, cmdContent)
+      const startCommand = `
+Set-Location -Path "${projectRoot}"
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
+Write-Host "Starting Next.js in development mode..."
+Start-Process powershell -ArgumentList "-NoProfile","-NonInteractive","-Command","cd '${projectRoot}'; npm run dev" -WindowStyle Hidden
+`.trim()
 
-      // Запускаем командный файл
-      await execAsync(`"${cmdPath}"`, {
+      // Создаем PowerShell скрипт
+      const psPath = path.join(projectRoot, 'start-dev.ps1')
+      const fs = require('fs')
+      fs.writeFileSync(psPath, startCommand)
+
+      // Запускаем PowerShell скрипт
+      console.log('Executing PowerShell script...')
+      await execAsync('powershell -ExecutionPolicy Bypass -File "' + psPath + '"', {
         cwd: projectRoot,
         windowsHide: true
       })
 
       // Удаляем временный файл
-      fs.unlinkSync(cmdPath)
+      fs.unlinkSync(psPath)
+      console.log('PowerShell script executed')
     } else {
       await execAsync('npm run dev &', {
         cwd: projectRoot
