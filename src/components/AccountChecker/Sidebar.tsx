@@ -68,6 +68,8 @@ export function Sidebar() {
   const handleUpdate = async () => {
     try {
       setIsUpdating(true)
+      toast.info("Начало процесса обновления...")
+      
       const response = await fetch('/api/update', {
         method: 'POST'
       })
@@ -78,13 +80,15 @@ export function Sidebar() {
         throw new Error(data.details || data.error || 'Failed to update')
       }
 
-      toast.success("Обновление успешно завершено. Страница будет перезагружена через 10 секунд.")
+      toast.success(`Обновление успешно завершено. Путь проекта: ${data.details.projectRoot}`)
+      toast.info("Перезагрузка страницы через 15 секунд...")
       
       // Даем больше времени процессу Next.js запуститься
       setTimeout(() => {
         window.location.reload()
-      }, 10000)
+      }, 15000)
     } catch (error) {
+      console.error('Update error:', error)
       toast.error(`Ошибка при обновлении: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setIsUpdating(false)

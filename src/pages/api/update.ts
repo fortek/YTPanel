@@ -11,7 +11,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const projectRoot = path.resolve(process.cwd())
+    // Получаем абсолютный путь к проекту
+    const projectRoot = process.cwd()
+    console.log('Project root:', projectRoot)
 
     // Проверяем статус репозитория
     console.log('Checking git status...')
@@ -51,20 +53,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('No existing process found or failed to stop:', error)
     }
 
-    // Запускаем next.js в режиме разработки в фоновом режиме
+    // Запускаем next.js в режиме разработки
     console.log('Starting Next.js in development mode...')
     if (process.platform === 'win32') {
-      // Создаем bat-файл для запуска Next.js
-      const batContent = '@echo off\ncd /d "%~dp0"\nnpm run dev'
-      const batPath = path.join(projectRoot, 'start-dev.bat')
+      // Создаем командный файл для запуска
+      const cmdContent = `
+@echo off
+cd /d "${projectRoot}"
+echo Starting Next.js in development mode...
+start "Next.js Dev Server" /min cmd /c "npm run dev"
+      `.trim()
+      
+      const cmdPath = path.join(projectRoot, 'start-dev.cmd')
       const fs = require('fs')
-      fs.writeFileSync(batPath, batContent)
+      fs.writeFileSync(cmdPath, cmdContent)
 
-      // Запускаем bat-файл в скрытом режиме
-      await execAsync('start /min "" cmd /c start-dev.bat', {
+      // Запускаем командный файл
+      await execAsync(`"${cmdPath}"`, {
         cwd: projectRoot,
         windowsHide: true
       })
+
+      // Удаляем временный файл
+      fs.unlinkSync(cmdPath)
     } else {
       await execAsync('npm run dev &', {
         cwd: projectRoot
@@ -75,6 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ 
       message: 'Update successful',
       details: {
+        projectRoot,
         stdout,
         stderr
       }
