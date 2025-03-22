@@ -5,18 +5,22 @@ import { useAccountLists } from "@/contexts/AccountListsContext"
 import { formatDistanceToNow } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Download, Loader2, Network, Settings } from "lucide-react"
+import { Pencil, Trash2, Download, Loader2, Network, RefreshCw } from "lucide-react"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
 import { useState } from "react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useRouter } from "next/router"
+import { Label } from "@/components/ui/label"
+import { useProxy } from "@/contexts/ProxyContext"
 
 export function Sidebar() {
   const { lists, activeListId, setActiveList, removeList, renameList, downloadList, addList, isLoading } = useAccountLists()
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false)
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [newName, setNewName] = useState("")
+  const { proxy, setProxy } = useProxy()
+  const [isUpdating, setIsUpdating] = useState(false)
   const router = useRouter()
 
   const handleListSelect = (id: string) => {
@@ -59,6 +63,28 @@ export function Sidebar() {
       return email ? `${cookies.trim()}|${email.trim()}` : cookies.trim()
     }).filter(Boolean)
     await addList(name, accounts)
+  }
+
+  const handleUpdate = async () => {
+    try {
+      setIsUpdating(true)
+      const response = await fetch('/api/update', {
+        method: 'POST'
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update')
+      }
+
+      toast.success("Обновление успешно завершено. Страница будет перезагружена.")
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } catch (error) {
+      toast.error("Ошибка при обновлении")
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   return (
@@ -131,13 +157,26 @@ export function Sidebar() {
           </div>
         </div>
         <div className="p-4 border-t">
+          <div className="space-y-2">
+            <Label htmlFor="proxy">Прокси (необязательно):</Label>
+            <Input
+              id="proxy"
+              placeholder="IP:PORT:LOGIN:PASS"
+              value={proxy}
+              onChange={(e) => setProxy(e.target.value)}
+              className="w-full bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+            />
+          </div>
+        </div>
+        <div className="p-4 border-t">
           <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => router.push("/settings")}
+            variant="outline"
+            className="w-full"
+            onClick={handleUpdate}
+            disabled={isUpdating}
           >
-            <Settings className="h-4 w-4 mr-2" />
-            Настройки
+            <RefreshCw className={cn("h-4 w-4 mr-2", isUpdating && "animate-spin")} />
+            {isUpdating ? "Обновление..." : "Обновить панель"}
           </Button>
         </div>
       </div>

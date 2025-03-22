@@ -9,15 +9,12 @@ import { Button } from "@/components/ui/button"
 import { LogOut, FileText, FolderOpen } from "lucide-react"
 import Link from "next/link"
 import { ServerMetrics } from '@/components/ServerMetrics/ServerMetrics'
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 export default function Home() {
   const { isAuthenticated, logout } = useAuth()
   const { activeList, isLoading } = useAccountLists()
   const router = useRouter()
   const [isLoading2, setIsLoading2] = useState(true)
-  const [proxy, setProxy] = useState("")
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -71,16 +68,6 @@ export default function Home() {
                     API Docs
                   </Button>
                 </Link>
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="proxy">Прокси (необязательно):</Label>
-                  <Input
-                    id="proxy"
-                    placeholder="IP:PORT:LOGIN:PASS"
-                    value={proxy}
-                    onChange={(e) => setProxy(e.target.value)}
-                    className="w-64"
-                  />
-                </div>
                 <Button variant='outline' onClick={logout}>
                   <LogOut className='w-4 h-4 mr-2' />
                   Logout
@@ -99,7 +86,7 @@ export default function Home() {
               </div>
             ) : (
               activeList && activeList.accounts && activeList.accounts.length > 0 && (
-                <AccountsList accounts={activeList.accounts} proxy={proxy} key={activeList.id} />
+                <AccountsList accounts={activeList.accounts} key={activeList.id} />
               )
             )}
           </div>

@@ -6,6 +6,7 @@ import { accountService } from "@/services/accountService"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FixedSizeList as List } from "react-window"
 import AutoSizer from "react-virtualized-auto-sizer"
+import { useProxy } from "@/contexts/ProxyContext"
 
 interface Account {
   id: number
@@ -21,12 +22,12 @@ interface Account {
 
 interface AccountsListProps {
   accounts: string[]
-  proxy?: string
 }
 
 const ITEM_SIZE = 56
 
-export function AccountsList({ accounts, proxy }: AccountsListProps) {
+export function AccountsList({ accounts }: AccountsListProps) {
+  const { proxy } = useProxy()
   const [accountsState, setAccountsState] = useState<Account[]>(
     accounts.map((line, index) => {
       const [cookies, email] = line.split("|")
