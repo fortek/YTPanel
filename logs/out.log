@@ -49,3 +49,28 @@
 {"message":"\u001b[?25h","timestamp":"2025-03-22T11:53:58","type":"out","process_id":0,"app_name":"ytpanel"}
 {"message":"\n","timestamp":"2025-03-22T11:53:58","type":"out","process_id":0,"app_name":"ytpanel"}
 {"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:53:58","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"No process found on port 3000\n","timestamp":"2025-03-22T11:56:00","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:56:02","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:56:02","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:56:02","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:56:02","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"No process found on port 3000\n","timestamp":"2025-03-22T11:56:03","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:56:04","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:56:05","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:56:05","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:56:05","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"No process found on port 3000\n","timestamp":"2025-03-22T11:56:05","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:56:07","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:56:07","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:56:07","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:56:07","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"No process found on port 3000\n","timestamp":"2025-03-22T11:56:08","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:56:09","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:56:10","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:56:10","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:56:10","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"No process found on port 3000\n","timestamp":"2025-03-22T11:56:11","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n> softgen-firebase-starter@0.1.0 dev\n> next dev\n\n","timestamp":"2025-03-22T11:56:12","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\u001b[?25h","timestamp":"2025-03-22T11:56:13","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"\n","timestamp":"2025-03-22T11:56:13","type":"out","process_id":0,"app_name":"ytpanel"}
+{"message":"npm process exited with code 0\n","timestamp":"2025-03-22T11:56:13","type":"out","process_id":0,"app_name":"ytpanel"}
