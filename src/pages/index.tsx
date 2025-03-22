@@ -18,7 +18,7 @@ export default function Home() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const authStatus = localStorage.getItem("youtube_checker_auth")
+      const authStatus = localStorage.getItem("youtube_panel_auth")
       if (authStatus !== "true") {
         router.push("/auth/login")
       } else {
@@ -35,8 +35,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>YouTube Account Checker</title>
-        <meta name="description" content="Check YouTube accounts status" />
+        <title>YouTube Panel</title>
+        <meta name="description" content="YouTube accounts management panel" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
@@ -47,7 +47,7 @@ export default function Home() {
             <div className='flex justify-between items-center mb-8'>
               <div>
                 <h1 className='text-3xl font-bold'>
-                  YouTube Account Checker
+                  YouTube Panel
                 </h1>
                 {activeList && (
                   <p className='text-muted-foreground mt-2'>

@@ -1,7 +1,15 @@
-
 import { NextApiRequest, NextApiResponse } from "next"
 import fs from "fs"
 import path from "path"
+
+export const config = {
+  api: {
+    responseLimit: false,
+    bodyParser: {
+      sizeLimit: false
+    },
+  },
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {

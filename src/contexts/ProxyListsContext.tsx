@@ -1,17 +1,17 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 
-interface AccountList {
+interface ProxyList {
   id: string
   name: string
-  accounts: string[]
+  proxies: string[]
   createdAt: Date
 }
 
-interface AccountListsContextType {
-  lists: AccountList[]
+interface ProxyListsContextType {
+  lists: ProxyList[]
   activeListId: string | null
-  activeList: AccountList | null
-  addList: (name: string, accounts: string[]) => Promise<void>
+  activeList: ProxyList | null
+  addList: (name: string, proxies: string[]) => Promise<void>
   setActiveList: (id: string | null) => Promise<void>
   removeList: (id: string) => Promise<void>
   renameList: (id: string, newName: string) => Promise<void>
@@ -20,12 +20,12 @@ interface AccountListsContextType {
   error: string | null
 }
 
-const AccountListsContext = createContext<AccountListsContextType | undefined>(undefined)
+const ProxyListsContext = createContext<ProxyListsContextType | undefined>(undefined)
 
-export function AccountListsProvider({ children }: { children: ReactNode }) {
-  const [lists, setLists] = useState<AccountList[]>([])
+export function ProxyListsProvider({ children }: { children: ReactNode }) {
+  const [lists, setLists] = useState<ProxyList[]>([])
   const [activeListId, setActiveListId] = useState<string | null>(null)
-  const [activeList, setActiveList] = useState<AccountList | null>(null)
+  const [activeList, setActiveList] = useState<ProxyList | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,20 +35,20 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
 
   const loadListNames = async () => {
     try {
-      const response = await fetch("/api/lists")
+      const response = await fetch("/api/proxies")
       if (!response.ok) {
-        throw new Error("Failed to load lists")
+        throw new Error("Failed to load proxy lists")
       }
       
       const data = await response.json()
-      const listsWithoutAccounts = data.map((list: any) => ({
+      const listsWithoutProxies = data.map((list: any) => ({
         ...list,
         createdAt: new Date(list.createdAt),
-        accounts: []
+        proxies: []
       }))
-      setLists(listsWithoutAccounts)
+      setLists(listsWithoutProxies)
     } catch (error) {
-      setError("Failed to load account lists")
+      setError("Failed to load proxy lists")
       console.error("Error loading lists:", error)
     }
   }
@@ -56,11 +56,9 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
   const loadListContent = async (id: string) => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/lists/${id}`, {
-        method: "GET"
-      })
+      const response = await fetch(`/api/proxies/${id}`)
       if (!response.ok) {
-        throw new Error("Failed to load list content")
+        throw new Error("Failed to load proxy list content")
       }
       
       const data = await response.json()
@@ -71,11 +69,11 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       
       setActiveList(updatedList)
       setLists(prev => prev.map(list => 
-        list.id === id ? { ...list, accounts: updatedList.accounts } : list
+        list.id === id ? { ...list, proxies: updatedList.proxies } : list
       ))
     } catch (error) {
       console.error("Error loading list content:", error)
-      setError("Failed to load list content")
+      setError("Failed to load proxy list content")
     } finally {
       setIsLoading(false)
     }
@@ -90,63 +88,47 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     await loadListContent(id)
   }
 
-  const addList = async (name: string, accounts: string[]) => {
+  const addList = async (name: string, proxies: string[]) => {
     try {
-      const chunkSize = 1000 // Размер чанка в строках
-      const chunks = []
-      
-      // Разбиваем массив на чанки
-      for (let i = 0; i < accounts.length; i += chunkSize) {
-        chunks.push(accounts.slice(i, i + chunkSize))
-      }
-      
-      // Создаем список с пустым массивом аккаунтов
-      const response = await fetch("/api/lists", {
+      setIsLoading(true)
+      setError(null)
+
+      const response = await fetch("/api/proxies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, accounts: [] })
+        body: JSON.stringify({ name, proxies })
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error("Failed to create list")
+        throw new Error(data.error || "Failed to create proxy list")
       }
       
-      const newList = await response.json()
-      const listWithDate = { 
-        ...newList, 
-        createdAt: new Date(newList.createdAt),
-        accounts: []
+      const newList = {
+        ...data,
+        createdAt: new Date(data.createdAt),
+        proxies: []
       }
-      setLists(prev => [...prev, listWithDate])
-
-      // Отправляем каждый чанк отдельно
-      for (let i = 0; i < chunks.length; i++) {
-        const chunkResponse = await fetch(`/api/lists/${newList.id}/append`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accounts: chunks[i] })
-        })
-
-        if (!chunkResponse.ok) {
-          throw new Error(`Failed to append chunk ${i + 1}`)
-        }
-      }
-
+      setLists(prev => [...prev, newList])
       await setActiveListAndLoad(newList.id)
     } catch (error) {
       console.error("Error adding list:", error)
+      setError(error instanceof Error ? error.message : "Failed to create proxy list")
       throw error
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const removeList = async (id: string) => {
     try {
-      const response = await fetch(`/api/lists/${id}`, {
+      const response = await fetch(`/api/proxies/${id}`, {
         method: "DELETE"
       })
 
       if (!response.ok) {
-        throw new Error("Failed to delete list")
+        throw new Error("Failed to delete proxy list")
       }
 
       setLists(prev => prev.filter(list => list.id !== id))
@@ -162,14 +144,14 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
 
   const renameList = async (id: string, newName: string) => {
     try {
-      const response = await fetch(`/api/lists/${id}`, {
+      const response = await fetch(`/api/proxies/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName })
       })
 
       if (!response.ok) {
-        throw new Error("Failed to rename list")
+        throw new Error("Failed to rename proxy list")
       }
 
       const updatedList = await response.json()
@@ -190,8 +172,8 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       const list = lists.find(l => l.id === id)
       if (!list) throw new Error("List not found")
 
-      const response = await fetch(`/api/lists/${id}/download`)
-      if (!response.ok) throw new Error("Failed to download list")
+      const response = await fetch(`/api/proxies/${id}/download`)
+      if (!response.ok) throw new Error("Failed to download proxy list")
 
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
@@ -209,7 +191,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AccountListsContext.Provider 
+    <ProxyListsContext.Provider 
       value={{ 
         lists, 
         activeListId,
@@ -224,14 +206,14 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </AccountListsContext.Provider>
+    </ProxyListsContext.Provider>
   )
 }
 
-export function useAccountLists() {
-  const context = useContext(AccountListsContext)
+export function useProxyLists() {
+  const context = useContext(ProxyListsContext)
   if (context === undefined) {
-    throw new Error("useAccountLists must be used within an AccountListsProvider")
+    throw new Error("useProxyLists must be used within a ProxyListsProvider")
   }
   return context
-}
+} 

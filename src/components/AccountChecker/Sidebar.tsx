@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -6,16 +5,19 @@ import { useAccountLists } from "@/contexts/AccountListsContext"
 import { formatDistanceToNow } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Download, Loader2 } from "lucide-react"
+import { Pencil, Trash2, Download, Loader2, Network } from "lucide-react"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
 import { useState } from "react"
 import { toast } from "sonner"
+import Link from "next/link"
+import { useRouter } from "next/router"
 
 export function Sidebar() {
-  const { lists, activeListId, setActiveList, removeList, renameList, downloadList, isLoading } = useAccountLists()
+  const { lists, activeListId, setActiveList, removeList, renameList, downloadList, addList, isLoading } = useAccountLists()
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false)
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [newName, setNewName] = useState("")
+  const router = useRouter()
 
   const handleListSelect = (id: string) => {
     setActiveList(id)
@@ -50,11 +52,20 @@ export function Sidebar() {
     setIsRenameDialogOpen(true)
   }
 
+  const handleFileUpload = async (file: File, name: string) => {
+    const text = await file.text()
+    const accounts = text.split("\n").map(line => {
+      const [cookies, email] = line.split("|")
+      return email ? `${cookies.trim()}|${email.trim()}` : cookies.trim()
+    }).filter(Boolean)
+    await addList(name, accounts)
+  }
+
   return (
     <>
       <div className="pb-12 w-80 border-r flex flex-col h-screen">
         <div className="p-4 border-b">
-          <FileUpload />
+          <FileUpload onFileSelect={handleFileUpload} />
         </div>
         <div className="flex-1 overflow-hidden">
           <div className="px-3 py-2">
@@ -118,6 +129,16 @@ export function Sidebar() {
               </div>
             </ScrollArea>
           </div>
+        </div>
+        <div className="p-4 border-t">
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={() => router.push("/proxies")}
+          >
+            <Network className="h-4 w-4 mr-2" />
+            Управление прокси
+          </Button>
         </div>
       </div>
 

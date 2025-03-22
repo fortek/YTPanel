@@ -1,7 +1,20 @@
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    serverComponentsExternalPackages: ['sharp']
+  },
+  webpack: (config, { dev, isServer }) => {
+    // Увеличиваем лимиты для режима разработки
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ['**/.git/**', '**/node_modules/**'],
+      }
+    }
+    return config
+  },
   async headers() {
     return [
       {
@@ -10,6 +23,19 @@ const nextConfig = {
           {
             key: "Content-Type",
             value: "text/plain",
+          },
+        ],
+      },
+      {
+        source: "/api/lists/:path*",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/json",
+          },
+          {
+            key: "Content-Length",
+            value: "1073741824", // 1GB в байтах
           },
         ],
       },

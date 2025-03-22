@@ -1,7 +1,15 @@
-
 import { NextApiRequest, NextApiResponse } from "next"
 import fs from "fs"
 import path from "path"
+
+export const config = {
+  api: {
+    responseLimit: false,
+    bodyParser: {
+      sizeLimit: false
+    },
+  },
+}
 
 const LISTS_DIR = path.join(process.cwd(), "uploaded_cookies")
 
