@@ -16,30 +16,20 @@ const nextConfig = {
         moduleIds: 'named',
         runtimeChunk: 'single',
         splitChunks: false,
-        minimize: false,
-        removeAvailableModules: false,
-        removeEmptyChunks: false,
-        sideEffects: false,
       }
-      // Отключаем source maps в dev режиме для ускорения
+      // Отключаем source maps в dev режиме
       config.devtool = false
     }
     // Оптимизация для production сборки
     if (!dev && !isServer) {
       config.optimization = {
         ...config.optimization,
-        // Оптимизация JavaScript
         minimize: true,
-        // Разделение чанков
         splitChunks: {
           chunks: 'all',
-          // Минимальный размер чанка
           minSize: 20000,
-          // Максимальный размер чанка
           maxSize: 244000,
-          // Минимальное количество чанков
           minChunks: 1,
-          // Максимальное количество параллельных запросов
           maxAsyncRequests: 30,
           maxInitialRequests: 30,
         },
@@ -54,6 +44,13 @@ const nextConfig = {
   // Настройки для dev режима
   reactStrictMode: true,
   poweredByHeader: false,
+
+  // Настройки для Fast Refresh
+  experimental: {
+    optimizeCss: false,
+    optimizePackageImports: [],
+    webpackBuildWorker: true,
+  }
 }
 
 module.exports = nextConfig 
