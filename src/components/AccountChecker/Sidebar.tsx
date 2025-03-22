@@ -17,6 +17,7 @@ import { useProxy } from "@/contexts/ProxyContext"
 export function Sidebar() {
   const { lists, activeListId, setActiveList, removeList, renameList, downloadList, addList, isLoading } = useAccountLists()
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false)
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false)
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [newName, setNewName] = useState("")
   const { proxy, setProxy } = useProxy()
@@ -69,12 +70,15 @@ export function Sidebar() {
     await addList(name, accounts)
   }
 
-  const handleUpdate = async () => {
+  const handleUpdateClick = () => {
+    setIsUpdateDialogOpen(true)
+  }
+
+  const handleUpdateConfirm = async () => {
+    setIsUpdateDialogOpen(false)
     try {
       setUpdateLoading(true)
-      setUpdateError(null)
-      setUpdateSuccess(null)
-      setUpdateMessage('Начало процесса обновления...')
+      toast.info("Начало процесса обновления...")
 
       const response = await fetch('/api/update', {
         method: 'POST'
@@ -85,19 +89,17 @@ export function Sidebar() {
       }
 
       const data = await response.json()
-      setUpdateMessage(`Обновление успешно завершено. Путь проекта: ${data.details.projectRoot}`)
-      setUpdateSuccess(true)
+      toast.success(`Обновление успешно завершено. Путь проекта: ${data.details.projectRoot}`)
 
       // Задержка перед перезагрузкой
       setTimeout(() => {
-        setUpdateMessage('Перезагрузка страницы через 15 секунд...')
+        toast.info("Перезагрузка страницы через 15 секунд...")
         setTimeout(() => {
           window.location.reload()
         }, 15000)
       }, 3000)
     } catch (error) {
-      setUpdateError(error instanceof Error ? error.message : String(error))
-      setUpdateMessage(null)
+      toast.error(`Ошибка при обновлении: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setUpdateLoading(false)
     }
@@ -188,7 +190,7 @@ export function Sidebar() {
           <Button
             variant="outline"
             className="w-full"
-            onClick={handleUpdate}
+            onClick={handleUpdateClick}
             disabled={updateLoading}
           >
             {updateLoading ? (
@@ -200,27 +202,12 @@ export function Sidebar() {
                 Обновление...
               </div>
             ) : (
-              'Обновить'
+              <div className="flex items-center">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Обновить панель
+              </div>
             )}
           </Button>
-
-          {updateMessage && (
-            <div className="mt-2 p-2 bg-gray-700 rounded text-sm">
-              {updateMessage}
-            </div>
-          )}
-
-          {updateError && (
-            <div className="mt-2 p-2 bg-red-600 rounded text-sm">
-              Ошибка при обновлении: {updateError}
-            </div>
-          )}
-
-          {updateSuccess && (
-            <div className="mt-2 p-2 bg-green-600 rounded text-sm">
-              Обновление успешно завершено
-            </div>
-          )}
         </div>
       </div>
 
@@ -254,6 +241,32 @@ export function Sidebar() {
               className="bg-blue-600 text-white hover:bg-blue-700"
             >
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+        <DialogContent className="bg-zinc-900 border border-zinc-800 shadow-lg sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-zinc-50">Обновление панели</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Вы уверены, что хотите обновить панель? Это действие перезагрузит страницу через 15 секунд.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsUpdateDialogOpen(false)}
+              className="bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+            >
+              Отмена
+            </Button>
+            <Button 
+              onClick={handleUpdateConfirm}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Обновить
             </Button>
           </DialogFooter>
         </DialogContent>
