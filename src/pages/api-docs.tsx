@@ -6,6 +6,43 @@ import Link from "next/link"
 export default function ApiDocsPage() {
   const endpoints = [
     {
+      title: "Get Chat ID",
+      method: "POST",
+      path: "/api/get-chat-id",
+      description: "Get YouTube live chat ID from video ID",
+      requestBody: {
+        videoId: "VIDEO_ID_HERE",
+        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
+      },
+      responses: {
+        200: {
+          chatId: "CHAT_ID_HERE",
+          proxy: {
+            used: true,
+            address: "192.168.1.1",
+            port: "8080"
+          }
+        },
+        400: [
+          {
+            error: "Video ID is required"
+          },
+          {
+            error: "Invalid proxy format. Expected: IP:PORT:LOGIN:PASSWORD"
+          },
+          {
+            error: "Proxy is not working or not responding"
+          }
+        ],
+        404: {
+          error: "Chat ID not found"
+        },
+        500: {
+          error: "Failed to fetch chat ID"
+        }
+      }
+    },
+    {
       title: "Check Account",
       method: "POST",
       path: "/api/check-account",
@@ -104,74 +141,89 @@ export default function ApiDocsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-zinc-950 py-12 px-4">
-      <div className="max-w-[1000px] mx-auto">
-        <div className="flex items-center justify-between mb-12">
+    <div className="min-h-screen bg-gradient-to-b from-zinc-900 to-zinc-950 py-8">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="flex items-center justify-between mb-8 bg-zinc-900/50 p-6 rounded-lg backdrop-blur-sm border border-zinc-800/50">
           <div>
-            <h1 className="text-4xl font-bold text-zinc-50 mb-2">API Documentation</h1>
-            <p className="text-zinc-400 text-lg">
+            <h1 className="text-3xl font-bold text-zinc-50 mb-1">API Documentation</h1>
+            <p className="text-zinc-400">
               Complete reference for all available API endpoints
             </p>
           </div>
           <Link href="/">
-            <Button variant="outline" className="border-zinc-800 hover:bg-zinc-800">
+            <Button variant="outline" className="border-zinc-700 hover:bg-zinc-800/50 transition-colors">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to App
             </Button>
           </Link>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
           {endpoints.map((endpoint, index) => (
-            <Card key={index} className="border-zinc-800/50 bg-zinc-900/50 backdrop-blur-sm">
-              <CardHeader className="border-b border-zinc-800/50 pb-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <span className={`px-3 py-1.5 text-sm font-medium rounded-full ${
+            <Card key={index} className="border-zinc-800/30 bg-zinc-900/30 backdrop-blur-sm hover:border-zinc-700/50 transition-all">
+              <CardHeader className="border-b border-zinc-800/30 pb-4">
+                <div className="flex items-center gap-3">
+                  <span className={`px-2.5 py-1 text-xs font-medium rounded-md ${
                     endpoint.method === "GET" 
-                      ? "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/30"
-                      : "bg-green-500/10 text-green-400 ring-1 ring-green-500/30"
+                      ? "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20"
+                      : "bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
                   }`}>
                     {endpoint.method}
                   </span>
-                  <CardTitle className="text-2xl text-zinc-50">{endpoint.title}</CardTitle>
+                  <code className="px-2.5 py-1 bg-zinc-800/50 rounded-md text-zinc-300 font-mono text-sm">
+                    {endpoint.path}
+                  </code>
                 </div>
-                <code className="px-3 py-2 bg-zinc-800 rounded-lg text-zinc-300 font-mono text-sm block">
-                  {endpoint.path}
-                </code>
-                <CardDescription className="mt-4 text-zinc-400 text-base">
+                <CardTitle className="text-xl text-zinc-100 mt-3">{endpoint.title}</CardTitle>
+                <CardDescription className="text-zinc-400 mt-1">
                   {endpoint.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
+              <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {endpoint.requestBody && (
-                  <div>
-                    <h3 className="text-sm font-medium text-zinc-300 mb-3">Request Body</h3>
-                    <pre className="bg-zinc-800 p-4 rounded-lg overflow-x-auto">
-                      <code className="text-zinc-300 text-sm">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                      Request Body
+                    </h3>
+                    <pre className="bg-zinc-800/50 p-3 rounded-md overflow-x-auto text-sm">
+                      <code className="text-zinc-300">
                         {JSON.stringify(endpoint.requestBody, null, 2)}
                       </code>
                     </pre>
                   </div>
                 )}
-                <div>
-                  <h3 className="text-sm font-medium text-zinc-300 mb-3">Responses</h3>
-                  <div className="space-y-4">
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                    Responses
+                  </h3>
+                  <div className="space-y-3">
                     {Object.entries(endpoint.responses).map(([code, response]) => (
-                      <div key={code}>
-                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-3 ${
+                      <div key={code} className="relative group">
+                        <span className={`absolute -left-2 top-3 w-1.5 h-1.5 rounded-full ${
                           code.startsWith("2")
-                            ? "bg-green-500/10 text-green-400 ring-1 ring-green-500/30"
+                            ? "bg-green-400"
                             : code.startsWith("4")
-                            ? "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/30"
-                            : "bg-red-500/10 text-red-400 ring-1 ring-red-500/30"
-                        }`}>
-                          {code}
-                        </span>
-                        <pre className="bg-zinc-800 p-4 rounded-lg overflow-x-auto">
-                          <code className="text-zinc-300 text-sm">
-                            {JSON.stringify(response, null, 2)}
-                          </code>
-                        </pre>
+                            ? "bg-amber-400"
+                            : "bg-red-400"
+                        }`}></span>
+                        <div className="pl-3">
+                          <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-md mb-2 ${
+                            code.startsWith("2")
+                              ? "bg-green-500/10 text-green-400"
+                              : code.startsWith("4")
+                              ? "bg-amber-500/10 text-amber-400"
+                              : "bg-red-500/10 text-red-400"
+                          }`}>
+                            {code}
+                          </span>
+                          <pre className="bg-zinc-800/50 p-3 rounded-md overflow-x-auto text-sm">
+                            <code className="text-zinc-300">
+                              {JSON.stringify(response, null, 2)}
+                            </code>
+                          </pre>
+                        </div>
                       </div>
                     ))}
                   </div>
