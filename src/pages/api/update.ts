@@ -2,6 +2,7 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
+import fs from 'fs'
 
 const execAsync = promisify(exec)
 
@@ -14,6 +15,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Получаем путь к проекту
     const projectRoot = process.cwd()
     console.log('Project root:', projectRoot)
+
+    // Проверяем наличие Git репозитория
+    const gitDir = path.join(projectRoot, '.git')
+    if (!fs.existsSync(gitDir)) {
+      console.log('Git repository not found. Initializing...')
+      
+      // Инициализируем Git репозиторий
+      await execAsync('git init', {
+        cwd: projectRoot
+      })
+
+      // Добавляем все файлы в Git
+      await execAsync('git add .', {
+        cwd: projectRoot
+      })
+
+      // Создаем первый коммит
+      await execAsync('git commit -m "Initial commit"', {
+        cwd: projectRoot
+      })
+
+      console.log('Git repository initialized successfully')
+    }
+
+    // Проверяем наличие удаленного репозитория
+    try {
+      await execAsync('git remote -v', {
+        cwd: projectRoot
+      })
+    } catch (error) {
+      // Если удаленного репозитория нет, пропускаем Git операции
+      console.log('No remote repository found. Skipping Git operations.')
+      // Устанавливаем зависимости
+      console.log('Installing dependencies...')
+      await execAsync('npm install', {
+        cwd: projectRoot
+      })
+
+      return res.status(200).json({ 
+        message: 'Update successful (local repository)',
+        details: {
+          projectRoot
+        }
+      })
+    }
 
     // Принудительно получаем изменения из Git
     console.log('Fetching changes from Git...')
