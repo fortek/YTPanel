@@ -72,16 +72,20 @@ export function Sidebar() {
         method: 'POST'
       })
       
+      const data = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Failed to update')
+        throw new Error(data.details || data.error || 'Failed to update')
       }
 
-      toast.success("Обновление успешно завершено. Страница будет перезагружена.")
+      toast.success("Обновление успешно завершено. Страница будет перезагружена через 5 секунд.")
+      
+      // Даем время процессу Next.js запуститься
       setTimeout(() => {
         window.location.reload()
-      }, 2000)
+      }, 5000)
     } catch (error) {
-      toast.error("Ошибка при обновлении")
+      toast.error(`Ошибка при обновлении: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setIsUpdating(false)
     }

@@ -13,37 +13,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const projectRoot = path.resolve(process.cwd())
 
+    // Проверяем статус репозитория
+    console.log('Checking git status...')
+    await execAsync('git fetch origin main', {
+      cwd: projectRoot
+    })
+
     // Выполняем git pull
+    console.log('Pulling changes...')
     const { stdout, stderr } = await execAsync('git pull origin main', {
       cwd: projectRoot
     })
 
-    if (stderr && !stderr.includes('Already up to date')) {
-      throw new Error(stderr)
+    console.log('Git pull output:', stdout)
+    console.log('Git pull stderr:', stderr)
+
+    // Проверяем наличие изменений
+    if (stderr && stderr.includes('Already up to date')) {
+      console.log('No updates found')
     }
 
     // Устанавливаем зависимости
+    console.log('Installing dependencies...')
     await execAsync('npm install', {
       cwd: projectRoot
     })
 
     // Останавливаем текущий процесс next.js если он запущен
+    console.log('Stopping current Next.js process...')
     try {
       if (process.platform === 'win32') {
-        await execAsync('taskkill /F /IM node.exe')
+        await execAsync('taskkill /F /IM node.exe', { windowsHide: true })
       } else {
         await execAsync('pkill -f "next dev"')
       }
     } catch (error) {
-      // Игнорируем ошибку если процесс не был найден
-      console.log('No existing process found')
+      console.log('No existing process found or failed to stop:', error)
     }
 
     // Запускаем next.js в режиме разработки в фоновом режиме
+    console.log('Starting Next.js in development mode...')
     if (process.platform === 'win32') {
       await execAsync('start /B npm run dev', {
         cwd: projectRoot,
-        shell: 'cmd.exe'
+        shell: 'cmd.exe',
+        windowsHide: true
       })
     } else {
       await execAsync('npm run dev &', {
@@ -51,9 +65,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
-    return res.status(200).json({ message: 'Update successful' })
+    console.log('Update process completed successfully')
+    return res.status(200).json({ 
+      message: 'Update successful',
+      details: {
+        stdout,
+        stderr
+      }
+    })
   } catch (error) {
     console.error('Update error:', error)
-    return res.status(500).json({ error: 'Failed to update' })
+    return res.status(500).json({ 
+      error: 'Failed to update',
+      details: error instanceof Error ? error.message : String(error)
+    })
   }
 } 
