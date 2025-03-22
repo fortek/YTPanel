@@ -2,7 +2,6 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
-import fs from 'fs'
 
 const execAsync = promisify(exec)
 
@@ -42,56 +41,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       cwd: projectRoot
     })
 
-    // Останавливаем текущий процесс next.js если он запущен
-    console.log('Stopping current Next.js process...')
+    // Устанавливаем PM2 глобально, если еще не установлен
+    console.log('Checking PM2 installation...')
     try {
-      if (process.platform === 'win32') {
-        await execAsync('taskkill /F /IM node.exe', { windowsHide: true })
-      } else {
-        await execAsync('pkill -f "next dev"')
-      }
+      await execAsync('pm2 -v')
+    } catch {
+      console.log('Installing PM2 globally...')
+      await execAsync('npm install -g pm2')
+    }
+
+    // Останавливаем текущий процесс через PM2
+    console.log('Stopping current process...')
+    try {
+      await execAsync('pm2 stop ytpanel')
     } catch (error) {
       console.log('No existing process found or failed to stop:', error)
     }
 
-    // Запускаем next.js в режиме разработки
-    console.log('Starting Next.js in development mode...')
-    if (process.platform === 'win32') {
-      // Создаем bat-файл для запуска Next.js
-      const batContent = `
-@echo off
-cd /d "${projectRoot}"
-npm run dev
-`.trim()
-
-      const batPath = path.join(projectRoot, 'start-dev.bat')
-      fs.writeFileSync(batPath, batContent)
-
-      // Создаем PowerShell скрипт для запуска bat-файла
-      const psContent = `
-$Host.UI.RawUI.WindowTitle = 'Next.js Dev Server'
-Start-Process -FilePath "${batPath}" -WindowStyle Minimized
-`.trim()
-
-      const psPath = path.join(projectRoot, 'run-dev.ps1')
-      fs.writeFileSync(psPath, psContent)
-
-      // Запускаем PowerShell скрипт
-      console.log('Executing PowerShell script...')
-      await execAsync('powershell -ExecutionPolicy Bypass -NoProfile -File "' + psPath + '"', {
-        cwd: projectRoot,
-        windowsHide: true
-      })
-
-      // Удаляем временные файлы
-      fs.unlinkSync(psPath)
-      fs.unlinkSync(batPath)
-      console.log('PowerShell script executed')
-    } else {
-      await execAsync('npm run dev &', {
-        cwd: projectRoot
-      })
-    }
+    // Запускаем приложение через PM2
+    console.log('Starting application with PM2...')
+    await execAsync('pm2 start ecosystem.config.js', {
+      cwd: projectRoot
+    })
 
     console.log('Update process completed successfully')
     return res.status(200).json({ 
