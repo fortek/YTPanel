@@ -16,7 +16,13 @@ const nextConfig = {
         moduleIds: 'named',
         runtimeChunk: 'single',
         splitChunks: false,
+        minimize: false,
+        removeAvailableModules: false,
+        removeEmptyChunks: false,
+        sideEffects: false,
       }
+      // Отключаем source maps в dev режиме для ускорения
+      config.devtool = false
     }
     // Оптимизация для production сборки
     if (!dev && !isServer) {
