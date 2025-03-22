@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -12,18 +11,29 @@ export default function ApiDocsPage() {
       path: "/api/check-account",
       description: "Check if a YouTube account cookie is valid",
       requestBody: {
-        cookies: "cookie_string_here"
+        cookies: "cookie_string_here",
+        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
       },
       responses: {
         200: {
           isValid: true,
           email: "user@example.com",
           status: 200,
-          url: "https://www.youtube.com/account"
+          url: "https://www.youtube.com/account",
+          proxy: {
+            used: true,
+            address: "192.168.1.1",
+            port: "8080"
+          }
         },
-        400: {
-          error: "Cookies are required"
-        },
+        400: [
+          {
+            error: "Cookies are required"
+          },
+          {
+            error: "Proxy is not working or not responding"
+          }
+        ],
         401: {
           error: "Invalid cookies"
         },
