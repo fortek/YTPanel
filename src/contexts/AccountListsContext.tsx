@@ -189,19 +189,8 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     try {
       const list = lists.find(l => l.id === id)
       if (!list) throw new Error("List not found")
-
-      const response = await fetch(`/api/lists/${id}/download`)
-      if (!response.ok) throw new Error("Failed to download list")
-
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `${list.name}.txt`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      
+      window.location.href = `/api/lists/${id}/download`
     } catch (error) {
       console.error("Error downloading list:", error)
       throw error

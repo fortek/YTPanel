@@ -20,15 +20,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { id } = req.query
     const listsDir = path.join(process.cwd(), "uploaded_cookies")
     const filePath = path.join(listsDir, `${id}.txt`)
+    const metaFilePath = path.join(listsDir, `${id}.meta.json`)
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ message: "List not found" })
     }
 
+    let fileName = `${id}.txt`
+    if (fs.existsSync(metaFilePath)) {
+      const meta = JSON.parse(fs.readFileSync(metaFilePath, "utf-8"))
+      fileName = `${meta.name}.txt`
+    }
+
     const fileContent = fs.readFileSync(filePath, "utf-8")
     
     res.setHeader("Content-Type", "text/plain")
-    res.setHeader("Content-Disposition", `attachment; filename=${id}.txt`)
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`)
     res.send(fileContent)
   } catch (error) {
     console.error("Error downloading list:", error)
