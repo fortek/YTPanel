@@ -100,7 +100,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
         chunks.push(accounts.slice(i, i + chunkSize))
       }
       
-      // Создаем список с пустым массивом аккаунтов
+      // Create a list with an empty accounts array
       const response = await fetch("/api/lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

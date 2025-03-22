@@ -5,7 +5,7 @@ import { useAccountLists } from "@/contexts/AccountListsContext"
 import { formatDistanceToNow } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Download, Loader2, Network, RefreshCw } from "lucide-react"
+import { Pencil, Trash2, Download, Loader2, Network, RefreshCw, FileText } from "lucide-react"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -78,28 +78,28 @@ export function Sidebar() {
     setIsUpdateDialogOpen(false)
     try {
       setUpdateLoading(true)
-      toast.info("Начало процесса обновления...")
+      toast.info("Starting update process...")
 
       const response = await fetch('/api/update', {
         method: 'POST'
       })
 
       if (!response.ok) {
-        throw new Error('Ошибка при обновлении')
+        throw new Error('Update failed')
       }
 
       const data = await response.json()
-      toast.success(`Обновление успешно завершено. Путь проекта: ${data.details.projectRoot}`)
+      toast.success(`Update completed successfully. Project path: ${data.details.projectRoot}`)
 
-      // Задержка перед перезагрузкой
+      // Delay before reload
       setTimeout(() => {
-        toast.info("Перезагрузка страницы через 15 секунд...")
+        toast.info("Page will reload in 15 seconds...")
         setTimeout(() => {
           window.location.reload()
         }, 15000)
       }, 3000)
     } catch (error) {
-      toast.error(`Ошибка при обновлении: ${error instanceof Error ? error.message : String(error)}`)
+      toast.error(`Update error: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setUpdateLoading(false)
     }
@@ -128,7 +128,10 @@ export function Sidebar() {
                     onClick={() => handleListSelect(list.id)}
                   >
                     <div className="flex-1">
-                      <div className="font-medium">{list.name}</div>
+                      <div className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        {list.name}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {formatDistanceToNow(list.createdAt, { addSuffix: true })}
                       </div>
@@ -176,7 +179,7 @@ export function Sidebar() {
         </div>
         <div className="p-4 border-t">
           <div className="space-y-2">
-            <Label htmlFor="proxy">Прокси (необязательно):</Label>
+            <Label htmlFor="proxy">Proxy (optional):</Label>
             <Input
               id="proxy"
               placeholder="IP:PORT:LOGIN:PASS"
@@ -199,12 +202,12 @@ export function Sidebar() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Обновление...
+                Updating...
               </div>
             ) : (
               <div className="flex items-center">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Обновить панель
+                Update Panel
               </div>
             )}
           </Button>
@@ -249,9 +252,9 @@ export function Sidebar() {
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
         <DialogContent className="bg-zinc-900 border border-zinc-800 shadow-lg sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-zinc-50">Обновление панели</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-zinc-50">Panel Update</DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Вы уверены, что хотите обновить панель? Это действие перезагрузит страницу через 15 секунд.
+              Are you sure you want to update the panel? This action will reload the page in 15 seconds.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-end gap-2">
@@ -260,13 +263,13 @@ export function Sidebar() {
               onClick={() => setIsUpdateDialogOpen(false)}
               className="bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
             >
-              Отмена
+              Cancel
             </Button>
             <Button 
               onClick={handleUpdateConfirm}
               className="bg-blue-600 text-white hover:bg-blue-700"
             >
-              Обновить
+              Update
             </Button>
           </DialogFooter>
         </DialogContent>

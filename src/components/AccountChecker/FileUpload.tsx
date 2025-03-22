@@ -62,7 +62,7 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
 
   const handleFileSelect = async (file: File) => {
     if (!file.name.endsWith(accept)) {
-      setError(`Пожалуйста, выберите файл с расширением ${accept}`)
+      setError(`Please select a file with extension ${accept}`)
       return
     }
 
@@ -71,13 +71,13 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
       const lines = text.split('\n').filter(line => line.trim())
       setFilePreview({
         lines: lines.length,
-        content: lines.slice(0, 5), // Показываем только первые 5 строк
+        content: lines.slice(0, 5), // Show only first 5 lines
         size: formatFileSize(file.size)
       })
       setSelectedFile(file)
       setError(null)
     } catch (err) {
-      setError("Ошибка при чтении файла")
+      setError("Error reading file")
       console.error("File reading error:", err)
     }
   }
@@ -89,7 +89,7 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
 
   const handleSubmit = async () => {
     if (!selectedFile || (showNameInput && !listName.trim())) {
-      setError(showNameInput ? "Пожалуйста, введите имя списка и выберите файл" : "Пожалуйста, выберите файл")
+      setError(showNameInput ? "Please enter a list name and select a file" : "Please select a file")
       return
     }
 
@@ -97,26 +97,26 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
     setUploadProgress(0)
     
     try {
-      // Начало чтения файла
+      // Start reading file
       setUploadProgress(10)
       const text = await selectedFile.text()
       
-      // Обработка строк
+      // Process lines
       setUploadProgress(30)
       const lines = text.split("\n").filter(line => line.trim())
       
       if (lines.length === 0) {
-        throw new Error("Файл пуст")
+        throw new Error("File is empty")
       }
 
-      // Подготовка данных
+      // Prepare data
       setUploadProgress(50)
 
-      // Загрузка на сервер
+      // Upload to server
       setUploadProgress(70)
       await onFileSelect(selectedFile, showNameInput ? listName : selectedFile.name)
       
-      // Завершение
+      // Complete
       setUploadProgress(100)
       setListName("")
       setSelectedFile(null)
@@ -126,7 +126,7 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
       }
     } catch (err) {
       console.error("Upload error:", err)
-      setError(err instanceof Error ? err.message : "Ошибка при обработке файла")
+      setError(err instanceof Error ? err.message : "Error processing file")
     } finally {
       setIsLoading(false)
       setTimeout(() => setUploadProgress(0), 1000)
@@ -137,12 +137,12 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
     <div className="space-y-6 max-w-xl mx-auto">
       {showNameInput && (
         <div className="space-y-2">
-          <Label htmlFor="listName">Название списка</Label>
+          <Label htmlFor="listName">List Name</Label>
           <Input
             id="listName"
             value={listName}
             onChange={(e) => setListName(e.target.value)}
-            placeholder="Введите название для этого списка"
+            placeholder="Enter a name for this list"
             disabled={isLoading}
             required
             className="w-full"
@@ -202,13 +202,13 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
                 </div>
                 <div className="flex items-center space-x-1">
                   <FileCode className="w-4 h-4" />
-                  <span>{filePreview?.lines} строк</span>
+                  <span>{filePreview?.lines} lines</span>
                 </div>
               </div>
 
               {filePreview && (
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg text-left">
-                  <p className="text-sm font-medium mb-2">Предпросмотр:</p>
+                  <p className="text-sm font-medium mb-2">Preview:</p>
                   <div className="space-y-1">
                     {filePreview.content.map((line, index) => (
                       <p key={index} className="text-xs font-mono truncate">
@@ -217,7 +217,7 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
                     ))}
                     {filePreview.lines > 5 && (
                       <p className="text-xs text-muted-foreground">
-                        ... и еще {filePreview.lines - 5} строк
+                        ... and {filePreview.lines - 5} more lines
                       </p>
                     )}
                   </div>
@@ -235,12 +235,12 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Загрузка...
+                    Uploading...
                   </>
                 ) : (
                   <>
                     <Upload className="w-4 h-4 mr-2" />
-                    Загрузить файл
+                    Upload File
                   </>
                 )}
               </Button>
@@ -255,10 +255,10 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
               <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium">
-                  Перетащите файл сюда или нажмите для выбора
+                  Drag and drop a file here or click to select
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Поддерживаются только {accept} файлы
+                  Only {accept} files are supported
                 </p>
               </div>
             </motion.div>
@@ -277,8 +277,8 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
             <Progress value={uploadProgress} className="w-full h-2" />
             <p className="text-sm text-muted-foreground text-center">
               {uploadProgress < 100 
-                ? `Загрузка... ${Math.round(uploadProgress)}%`
-                : "Загрузка завершена!"}
+                ? `Uploading... ${Math.round(uploadProgress)}%`
+                : "Upload completed!"}
             </p>
           </motion.div>
         )}
