@@ -1,8 +1,7 @@
 module.exports = {
   apps: [{
     name: 'ytpanel',
-    script: 'npm',
-    args: 'run dev',
+    script: './start.js',
     cwd: process.cwd(),
     env: {
       NODE_ENV: 'development',

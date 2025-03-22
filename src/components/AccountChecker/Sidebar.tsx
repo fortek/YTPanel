@@ -104,7 +104,7 @@ export function Sidebar() {
         <div className="flex-1 overflow-hidden">
           <div className="px-3 py-2">
             <div className="flex items-center justify-between mb-2 px-4">
-              <h2 className="text-lg font-semibold">Account Lists</h2>
+              <h2 className="text-lg font-semibold">Account Lists2121212</h2>
             </div>
             <ScrollArea className="h-[calc(100vh-20rem)]">
               <div className="space-y-1">
