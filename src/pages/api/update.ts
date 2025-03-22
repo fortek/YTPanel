@@ -11,7 +11,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Получаем абсолютный путь к проекту
     const projectRoot = process.cwd()
     console.log('Project root:', projectRoot)
 
@@ -50,19 +49,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await execAsync('npm install -g pm2')
     }
 
-    // Останавливаем текущий процесс через PM2
-    console.log('Stopping current process...')
+    // Проверяем текущие процессы PM2
+    console.log('Checking current PM2 processes...')
+    const { stdout: pm2List } = await execAsync('pm2 list')
+    console.log('Current PM2 processes:', pm2List)
+
+    // Удаляем все процессы PM2
+    console.log('Removing all PM2 processes...')
     try {
-      await execAsync('pm2 stop ytpanel')
+      await execAsync('pm2 delete all')
     } catch (error) {
-      console.log('No existing process found or failed to stop:', error)
+      console.log('No processes to delete or error:', error)
+    }
+
+    // Очищаем логи PM2
+    console.log('Clearing PM2 logs...')
+    try {
+      await execAsync('pm2 flush')
+    } catch (error) {
+      console.log('Error clearing logs:', error)
     }
 
     // Запускаем приложение через PM2
     console.log('Starting application with PM2...')
-    await execAsync('pm2 start ecosystem.config.js', {
+    const { stdout: pm2Start } = await execAsync('pm2 start ecosystem.config.js', {
       cwd: projectRoot
     })
+    console.log('PM2 start output:', pm2Start)
+
+    // Проверяем статус процесса
+    console.log('Checking process status...')
+    const { stdout: pm2Status } = await execAsync('pm2 list')
+    console.log('Process status:', pm2Status)
+
+    // Проверяем логи процесса
+    console.log('Checking process logs...')
+    const { stdout: pm2Logs } = await execAsync('pm2 logs ytpanel --lines 20')
+    console.log('Process logs:', pm2Logs)
 
     console.log('Update process completed successfully')
     return res.status(200).json({ 
@@ -70,7 +93,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       details: {
         projectRoot,
         stdout,
-        stderr
+        stderr,
+        pm2Status,
+        pm2Logs
       }
     })
   } catch (error) {
