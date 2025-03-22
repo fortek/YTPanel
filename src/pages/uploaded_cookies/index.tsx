@@ -11,6 +11,7 @@ interface FileInfo {
   name: string
   size: number
   createdAt: string
+  downloadUrl: string
 }
 
 export default function UploadedCookiesPage() {
@@ -18,21 +19,22 @@ export default function UploadedCookiesPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const response = await fetch("/api/files")
-        if (response.ok) {
-          const data = await response.json()
-          setFiles(data.files || [])
-        }
-      } catch (error) {
-        console.error('Error fetching files:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
     fetchFiles()
   }, [])
+
+  const fetchFiles = async () => {
+    try {
+      const response = await fetch("/api/files")
+      if (response.ok) {
+        const data = await response.json()
+        setFiles(data.files || [])
+      }
+    } catch (error) {
+      console.error('Error fetching files:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -73,6 +75,7 @@ export default function UploadedCookiesPage() {
                   <TableHead>File Name</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead>Download URL</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -84,14 +87,25 @@ export default function UploadedCookiesPage() {
                     <TableCell>
                       {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
                     </TableCell>
+                    <TableCell>
+                      <a 
+                        href={file.downloadUrl} 
+                        className="text-blue-500 hover:text-blue-400 underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {file.downloadUrl}
+                      </a>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Link 
-                        href={`/uploaded_cookies/${file.name}`}
+                      <a 
+                        href={file.downloadUrl}
+                        download
                         className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                       >
                         <Download className="w-4 h-4 mr-2" />
                         Download
-                      </Link>
+                      </a>
                     </TableCell>
                   </TableRow>
                 ))}
