@@ -9,10 +9,13 @@ const execAsync = promisify(exec)
 // Кэш для хранения статуса обновления
 let updateInProgress = false
 
+// Переменная для хранения пути к git.exe
+let gitPath: string | null = null
+
 async function isGitInstalled(): Promise<boolean> {
   try {
-    // Используем полный путь к git.exe или команду через PowerShell
-    const command = process.platform === 'win32' 
+    // Проверяем git через PowerShell без явного пути
+    const command = process.platform === 'win32'
       ? 'powershell.exe -Command "git --version"'
       : 'git --version'
     
@@ -22,18 +25,19 @@ async function isGitInstalled(): Promise<boolean> {
     return true
   } catch (error) {
     console.log('Git check error:', error)
-    // Попробуем найти git.exe в стандартных местах установки
+    // Проверяем стандартные пути установки Git
     const commonGitPaths = [
       'C:\\Program Files\\Git\\cmd\\git.exe',
       'C:\\Program Files (x86)\\Git\\cmd\\git.exe'
     ]
     
-    for (const gitPath of commonGitPaths) {
-      if (fs.existsSync(gitPath)) {
-        console.log('Found Git at:', gitPath)
+    for (const possiblePath of commonGitPaths) {
+      if (fs.existsSync(possiblePath)) {
+        console.log('Found Git at:', possiblePath)
         try {
-          const { stdout, stderr } = await execAsync(`"${gitPath}" --version`)
+          const { stdout, stderr } = await execAsync(`"${possiblePath}" --version`)
           console.log('Git version check result with full path:', { stdout, stderr })
+          gitPath = possiblePath // Сохраняем рабочий путь
           return true
         } catch (e) {
           console.log('Failed to execute Git with full path:', e)
@@ -50,7 +54,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Проверяем, не выполняется ли уже обновление
   if (updateInProgress) {
     return res.status(429).json({ 
       error: 'Update already in progress',
@@ -84,6 +87,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Git is installed and accessible')
 
+    // Используем полный путь к git.exe, если он найден, иначе предполагаем, что git доступен
+    const gitCommand = gitPath ? `"${gitPath}"` : 'git'
+
     // Проверяем наличие .git директории
     const gitDir = path.join(projectRoot, '.git')
     const isGitRepo = fs.existsSync(gitDir)
@@ -92,10 +98,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!isGitRepo) {
       console.log('Git repository not found. Initializing...')
       try {
-        // Используем PowerShell для выполнения git init
         const initCommand = process.platform === 'win32'
-          ? 'powershell.exe -Command "git init"'
-          : 'git init'
+          ? `powershell.exe -Command "${gitCommand} init"`
+          : `${gitCommand} init`
         
         const { stdout, stderr } = await execAsync(initCommand, { cwd: projectRoot })
         console.log('Git init result:', { stdout, stderr })
@@ -110,21 +115,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      // Проверяем наличие удаленного репозитория через PowerShell
+      // Проверяем наличие удаленного репозитория
       const remoteCommand = process.platform === 'win32'
-        ? 'powershell.exe -Command "git config --get remote.origin.url"'
-        : 'git config --get remote.origin.url'
+        ? `powershell.exe -Command "${gitCommand} config --get remote.origin.url"`
+        : `${gitCommand} config --get remote.origin.url`
       
       const { stdout: remoteUrl } = await execAsync(remoteCommand, { cwd: projectRoot })
       console.log('Remote URL:', remoteUrl.trim())
       
       if (remoteUrl.trim()) {
         console.log('Remote repository found, performing git operations...')
-        // Выполняем git операции через PowerShell
         const gitCommands = [
-          'git fetch origin',
-          'git reset --hard origin/main',
-          'git clean -f -d'
+          `${gitCommand} fetch origin`,
+          `${gitCommand} reset --hard origin/main`,
+          `${gitCommand} clean -f -d`
         ]
 
         for (const cmd of gitCommands) {
@@ -139,7 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('No remote repository found')
       }
 
-      // Устанавливаем зависимости через PowerShell
+      // Устанавливаем зависимости
       console.log('Installing dependencies...')
       const npmCommand = process.platform === 'win32'
         ? 'powershell.exe -Command "npm install"'
@@ -173,4 +177,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       details: error.message
     })
   }
-} 
+}
