@@ -3,29 +3,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
-import { Download } from "lucide-react"
+import { Download, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import "@/lib/utils"
 
 interface FileInfo {
   name: string
   size: number
-  createdAt: Date
+  createdAt: string
 }
 
 export default function UploadedCookiesPage() {
   const [files, setFiles] = useState<FileInfo[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchFiles = async () => {
-      const response = await fetch("/api/files")
-      if (response.ok) {
-        const data = await response.json()
-        setFiles(data.files)
+      try {
+        const response = await fetch("/api/files")
+        if (response.ok) {
+          const data = await response.json()
+          setFiles(data.files || [])
+        }
+      } catch (error) {
+        console.error('Error fetching files:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
     fetchFiles()
   }, [])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 py-12 px-4">
+        <div className="max-w-[1000px] mx-auto">
+          <div className="text-zinc-50">Loading...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 py-12 px-4">

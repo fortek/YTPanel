@@ -1,9 +1,14 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Оптимизация изображений
   images: {
-    domains: [],
-    unoptimized: process.env.NODE_ENV === 'development',
+    domains: ['i.ytimg.com', 'yt3.ggpht.com'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ['image/webp'],
+    minimumCacheTTL: 60,
   },
 
   // Настройки webpack для оптимизации бандла
@@ -17,23 +22,40 @@ const nextConfig = {
         runtimeChunk: 'single',
         splitChunks: false,
       };
-      // Удаляем config.devtool = false, чтобы использовать значение по умолчанию
     }
     // Оптимизация для production сборки
     if (!dev && !isServer) {
       config.optimization = {
         ...config.optimization,
-        minimize: true,
+        moduleIds: 'deterministic',
+        chunkIds: 'deterministic',
+        runtimeChunk: 'single',
         splitChunks: {
           chunks: 'all',
+          maxInitialRequests: 25,
           minSize: 20000,
-          maxSize: 244000,
-          minChunks: 1,
-          maxAsyncRequests: 30,
-          maxInitialRequests: 30,
+          cacheGroups: {
+            defaultVendors: {
+              test: /[\\/]node_modules[\\/]/,
+              priority: -10,
+              reuseExistingChunk: true,
+            },
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+          },
         },
       };
     }
+
+    // Добавляем поддержку алиасов путей
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.join(__dirname, 'src'),
+    };
+
     return config;
   },
 
@@ -43,13 +65,17 @@ const nextConfig = {
   // Настройки для dev режима
   reactStrictMode: true,
   poweredByHeader: false,
+  compress: true,
+  generateEtags: true,
 
   // Настройки для Fast Refresh
   experimental: {
-    optimizeCss: false,
-    optimizePackageImports: [],
-    webpackBuildWorker: true,
+    optimizePackageImports: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
   },
+
+  // Настройки для правильной обработки путей
+  basePath: '',
+  assetPrefix: '',
 };
 
 module.exports = nextConfig;
