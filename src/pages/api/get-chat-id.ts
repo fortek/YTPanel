@@ -92,12 +92,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       proxy: proxy ? "used" : "not used"
     })
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       chatId,
-      proxy: {
-        used: !!proxy,
-        address: proxy ? proxy.split(":")[0] : null,
-        port: proxy ? proxy.split(":")[1] : null
+      proxy: proxy ? {
+        used: true,
+        address: proxy.split(':')[0],
+        port: proxy.split(':')[1]
+      } : {
+        used: false
       }
     })
   } catch (error) {
