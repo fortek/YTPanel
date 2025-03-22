@@ -2,6 +2,7 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
+import fs from 'fs'
 
 const execAsync = promisify(exec)
 
@@ -56,27 +57,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Запускаем next.js в режиме разработки
     console.log('Starting Next.js in development mode...')
     if (process.platform === 'win32') {
-      const startCommand = `
-Set-Location -Path "${projectRoot}"
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
-Write-Host "Starting Next.js in development mode..."
-Start-Process powershell -ArgumentList "-NoProfile","-NonInteractive","-Command","cd '${projectRoot}'; npm run dev" -WindowStyle Hidden
+      // Создаем bat-файл для запуска Next.js
+      const batContent = `
+@echo off
+cd /d "${projectRoot}"
+npm run dev
 `.trim()
 
-      // Создаем PowerShell скрипт
-      const psPath = path.join(projectRoot, 'start-dev.ps1')
-      const fs = require('fs')
-      fs.writeFileSync(psPath, startCommand)
+      const batPath = path.join(projectRoot, 'start-dev.bat')
+      fs.writeFileSync(batPath, batContent)
+
+      // Создаем PowerShell скрипт для запуска bat-файла
+      const psContent = `
+$Host.UI.RawUI.WindowTitle = 'Next.js Dev Server'
+Start-Process -FilePath "${batPath}" -WindowStyle Minimized
+`.trim()
+
+      const psPath = path.join(projectRoot, 'run-dev.ps1')
+      fs.writeFileSync(psPath, psContent)
 
       // Запускаем PowerShell скрипт
       console.log('Executing PowerShell script...')
-      await execAsync('powershell -ExecutionPolicy Bypass -File "' + psPath + '"', {
+      await execAsync('powershell -ExecutionPolicy Bypass -NoProfile -File "' + psPath + '"', {
         cwd: projectRoot,
         windowsHide: true
       })
 
-      // Удаляем временный файл
+      // Удаляем временные файлы
       fs.unlinkSync(psPath)
+      fs.unlinkSync(batPath)
       console.log('PowerShell script executed')
     } else {
       await execAsync('npm run dev &', {
