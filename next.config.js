@@ -16,9 +16,8 @@ const nextConfig = {
         moduleIds: 'named',
         runtimeChunk: 'single',
         splitChunks: false,
-      }
-      // Отключаем source maps в dev режиме
-      config.devtool = false
+      };
+      // Удаляем config.devtool = false, чтобы использовать значение по умолчанию
     }
     // Оптимизация для production сборки
     if (!dev && !isServer) {
@@ -33,9 +32,9 @@ const nextConfig = {
           maxAsyncRequests: 30,
           maxInitialRequests: 30,
         },
-      }
+      };
     }
-    return config
+    return config;
   },
 
   // Отключаем source maps в production
@@ -50,7 +49,7 @@ const nextConfig = {
     optimizeCss: false,
     optimizePackageImports: [],
     webpackBuildWorker: true,
-  }
-}
+  },
+};
 
-module.exports = nextConfig 
+module.exports = nextConfig;
