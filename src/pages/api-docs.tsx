@@ -219,6 +219,36 @@ export default function ApiDocsPage() {
       }
     },
     {
+      title: "Send Like",
+      method: "POST",
+      path: "/api/send-like",
+      description: "Send a like to YouTube video",
+      requestBody: {
+        cookie: "YOUR_COOKIE_STRING",
+        channelId: "VIDEO_ID",
+        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
+      },
+      responses: {
+        200: {
+          response: "Like complete",
+          proxy: {
+            used: false
+          }
+        },
+        400: [
+          {
+            error: "Cookie and channel ID are required"
+          },
+          {
+            error: "SAPISID cookie not found"
+          }
+        ],
+        500: {
+          error: "Failed to send like"
+        }
+      }
+    },
+    {
       title: "Check Account",
       method: "POST",
       path: "/api/check-account",
