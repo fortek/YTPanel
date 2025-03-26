@@ -78,46 +78,6 @@ export default function ApiDocsPage() {
       }
     },
     {
-      title: "Get Vote ID",
-      method: "POST",
-      path: "/api/get-vote-id",
-      description: "Get YouTube live chat vote ID from video ID",
-      requestBody: {
-        videoId: "VIDEO_ID_HERE",
-        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
-      },
-      responses: {
-        200: {
-          continuationValue: "0ofMyAOAARpeQ2lrcUp3b1lWVU5VYW1veU9FczBSM2ROZFZGTVYwUjRaV2cyTm1wbkVndFBRMTlOU0dOS2RYUmhkeG9UNnFqZHVRRU5DZ3RQUTE5TlNHTktkWFJoZHlBQk1BQSUzRDABggEICAQYAiAAKACIAQGgAYGY9YeRnowDqAEAsgEA",
-          proxy: {
-            used: false
-          }
-        },
-        400: [
-          {
-            error: "Video ID is required"
-          },
-          {
-            error: "Invalid proxy format. Expected: IP:PORT:LOGIN:PASSWORD"
-          },
-          {
-            error: "Proxy is not working or not responding"
-          }
-        ],
-        404: [
-          {
-            error: "Live chat renderer not found"
-          },
-          {
-            error: "Continuation not found"
-          }
-        ],
-        500: {
-          error: "Failed to fetch vote ID"
-        }
-      }
-    },
-    {
       title: "Send Message Chat",
       method: "POST",
       path: "/api/send-message-chat",
@@ -218,6 +178,43 @@ export default function ApiDocsPage() {
         ],
         500: {
           error: "Failed to send vote"
+        }
+      }
+    },
+    {
+      title: "Send React Chat",
+      method: "POST",
+      path: "/api/send-react-chat",
+      description: "Send a reaction in YouTube live chat",
+      requestBody: {
+        cookie: "YOUR_COOKIE_STRING",
+        channel: "VIDEO_ID",
+        react: 1, // Номер реакции (от 1 до 5)
+        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
+      },
+      responses: {
+        200: {
+          response: "RESPONSE_TEXT || Send",
+          proxy: {
+            used: false
+          }
+        },
+        400: [
+          {
+            error: "Cookie, channel and react are required"
+          },
+          {
+            error: "React must be a number between 1 and 5"
+          },
+          {
+            error: "SAPISID cookie not found"
+          }
+        ],
+        404: {
+          error: "No feedback tokens found"
+        },
+        500: {
+          error: "Failed to send react"
         }
       }
     },
