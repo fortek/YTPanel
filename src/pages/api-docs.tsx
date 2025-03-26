@@ -153,6 +153,75 @@ export default function ApiDocsPage() {
       }
     },
     {
+      title: "Send Message Comment",
+      method: "POST",
+      path: "/api/send-message-comment",
+      description: "Send a comment to YouTube video",
+      requestBody: {
+        cookie: "YOUR_COOKIE_STRING",
+        word: "Comment text",
+        token: "COMMENT_TOKEN (optional)",
+        videoId: "VIDEO_ID (optional, required if token is not provided)",
+        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
+      },
+      responses: {
+        200: {
+          response: "Send (pageId) (createCommentParams) (sapisidhash)",
+          proxy: {
+            used: false
+          }
+        },
+        400: [
+          {
+            error: "Cookie and word are required"
+          },
+          {
+            error: "Either token or videoId is required"
+          },
+          {
+            error: "SAPISID cookie not found"
+          }
+        ],
+        500: {
+          error: "Failed to send comment"
+        }
+      }
+    },
+    {
+      title: "Send Vote Chat",
+      method: "POST",
+      path: "/api/send-vote-chat",
+      description: "Send a vote in YouTube live chat poll",
+      requestBody: {
+        cookie: "YOUR_COOKIE_STRING",
+        channel: "VIDEO_ID",
+        vote: 1, // Номер варианта ответа (начиная с 1)
+        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
+      },
+      responses: {
+        200: {
+          response: " || Send",
+          proxy: {
+            used: false
+          }
+        },
+        400: [
+          {
+            error: "Cookie, channel and vote are required"
+          },
+          {
+            error: "Vote must be a number"
+          },
+          {
+            error: "SAPISID cookie not found"
+          }
+        ],
+        500: {
+          error: "Failed to send vote"
+        }
+      }
+    },
+    {
       title: "Check Account",
       method: "POST",
       path: "/api/check-account",
