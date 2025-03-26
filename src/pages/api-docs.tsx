@@ -154,7 +154,7 @@ export default function ApiDocsPage() {
       description: "Send a vote in YouTube live chat poll",
       requestBody: {
         cookie: "YOUR_COOKIE_STRING",
-        channel: "VIDEO_ID",
+        videoId: "VIDEO_ID",
         vote: 1, // Номер варианта ответа (начиная с 1)
         proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
       },
@@ -167,7 +167,7 @@ export default function ApiDocsPage() {
         },
         400: [
           {
-            error: "Cookie, channel and vote are required"
+            error: "Cookie, videoId and vote are required"
           },
           {
             error: "Vote must be a number"
@@ -188,7 +188,7 @@ export default function ApiDocsPage() {
       description: "Send a reaction in YouTube live chat",
       requestBody: {
         cookie: "YOUR_COOKIE_STRING",
-        channel: "VIDEO_ID",
+        videoId: "VIDEO_ID",
         react: 1, // Номер реакции (от 1 до 5)
         proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
       },
@@ -201,7 +201,7 @@ export default function ApiDocsPage() {
         },
         400: [
           {
-            error: "Cookie, channel and react are required"
+            error: "Cookie, videoId and react are required"
           },
           {
             error: "React must be a number between 1 and 5"
@@ -225,7 +225,7 @@ export default function ApiDocsPage() {
       description: "Send a like to YouTube video",
       requestBody: {
         cookie: "YOUR_COOKIE_STRING",
-        channelId: "VIDEO_ID",
+        videoId: "VIDEO_ID",
         proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
       },
       responses: {
@@ -237,7 +237,7 @@ export default function ApiDocsPage() {
         },
         400: [
           {
-            error: "Cookie and channel ID are required"
+            error: "Cookie and video ID are required"
           },
           {
             error: "SAPISID cookie not found"

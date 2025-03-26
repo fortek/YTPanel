@@ -83,8 +83,9 @@ async function getVoteParams(
 
 async function sendVote(
   cookie: string,
+  videoId: string,
+  vote: number,
   sapisidhash: string,
-  voteParams: string,
   proxy?: string
 ): Promise<string> {
   let agent = undefined
@@ -94,15 +95,7 @@ async function sendVote(
     agent = new HttpsProxyAgent(proxyUrl)
   }
 
-  const postData = {
-    context: {
-      client: {
-        clientName: "WEB",
-        clientVersion: "2.20240122.00.00"
-      }
-    },
-    params: voteParams
-  }
+  const voteParams = await getVoteParams(cookie, sapisidhash, videoId, vote, proxy)
 
   const response = await fetch(
     `https://www.youtube.com/youtubei/v1/live_chat/send_live_chat_vote?key=${API_KEY}&prettyPrint=false`,
@@ -115,7 +108,15 @@ async function sendVote(
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html"
       },
-      body: JSON.stringify(postData),
+      body: JSON.stringify({
+        context: {
+          client: {
+            clientName: "WEB",
+            clientVersion: "2.20240122.00.00"
+          }
+        },
+        params: voteParams
+      }),
       agent
     }
   )
@@ -164,29 +165,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { cookie, channel, vote, proxy } = req.body
+    const { cookie, videoId, vote, proxy } = req.body
 
-    if (!cookie || !channel || !vote) {
-      return res.status(400).json({ error: "Cookie, channel and vote are required" })
+    if (!cookie || !videoId || !vote) {
+      return res.status(400).json({ error: "Cookie, videoId and vote are required" })
     }
 
     if (typeof vote !== "number") {
       return res.status(400).json({ error: "Vote must be a number" })
     }
 
-    const token = await getVoteId(channel, proxy)
     const sapisidhash = createSapisidHash(cookie)
-    
     if (!sapisidhash) {
       return res.status(400).json({ error: "SAPISID cookie not found" })
     }
 
-    const voteParams = await getVoteParams(cookie, sapisidhash, token, vote, proxy)
-    const response = await sendVote(cookie, sapisidhash, voteParams, proxy)
+    const response = await sendVote(cookie, videoId, vote, sapisidhash, proxy)
 
     console.log("Vote sent successfully:", {
-      channel,
+      videoId,
       vote,
+      response,
       proxy: proxy ? "used" : "not used"
     })
 

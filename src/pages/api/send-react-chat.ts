@@ -55,8 +55,9 @@ async function getFeedbackTokens(
 
 async function sendReact(
   cookie: string,
+  videoId: string,
+  react: number,
   sapisidhash: string,
-  feedbackToken: string,
   proxy?: string
 ): Promise<string> {
   let agent = undefined
@@ -75,7 +76,7 @@ async function sendReact(
         clientVersion: "2.20240228.06.00"
       }
     },
-    feedbackTokens: [feedbackToken],
+    feedbackTokens: [videoId],
     isFeedbackTokenUnencrypted: false,
     shouldMerge: false
   }
@@ -106,19 +107,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { cookie, channel, react, proxy } = req.body
+    const { cookie, videoId, react, proxy } = req.body
 
-    if (!cookie || !channel || !react) {
-      return res.status(400).json({ error: "Cookie, channel and react are required" })
+    if (!cookie || !videoId || !react) {
+      return res.status(400).json({ error: "Cookie, videoId and react are required" })
     }
 
     if (typeof react !== "number" || react < 1 || react > 5) {
       return res.status(400).json({ error: "React must be a number between 1 and 5" })
-    }
-
-    const tokens = await getFeedbackTokens(cookie, channel, proxy)
-    if (tokens.length === 0) {
-      return res.status(404).json({ error: "No feedback tokens found" })
     }
 
     const sapisidhash = createSapisidHash(cookie)
@@ -126,13 +122,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "SAPISID cookie not found" })
     }
 
-    // Выбираем токен на основе значения react
-    const tokenToUse = tokens[react - 1] || tokens[Math.floor(Math.random() * tokens.length)]
-    const response = await sendReact(cookie, sapisidhash, tokenToUse, proxy)
+    const response = await sendReact(cookie, videoId, react, sapisidhash, proxy)
 
     console.log("React sent successfully:", {
-      channel,
+      videoId,
       react,
+      response,
       proxy: proxy ? "used" : "not used"
     })
 

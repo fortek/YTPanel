@@ -20,7 +20,7 @@ function createSapisidHash(cookie: string): string | null {
 
 async function sendLike(
   cookie: string,
-  channelId: string,
+  videoId: string,
   sapisidhash: string,
   proxy?: string
 ): Promise<string> {
@@ -39,7 +39,7 @@ async function sendLike(
       }
     },
     target: {
-      videoId: channelId
+      videoId: videoId
     }
   }
 
@@ -76,10 +76,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { cookie, channelId, proxy } = req.body
+    const { cookie, videoId, proxy } = req.body
 
-    if (!cookie || !channelId) {
-      return res.status(400).json({ error: "Cookie and channel ID are required" })
+    if (!cookie || !videoId) {
+      return res.status(400).json({ error: "Cookie and video ID are required" })
     }
 
     const sapisidhash = createSapisidHash(cookie)
@@ -87,10 +87,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "SAPISID cookie not found" })
     }
 
-    const response = await sendLike(cookie, channelId, sapisidhash, proxy)
+    const response = await sendLike(cookie, videoId, sapisidhash, proxy)
 
     console.log("Like sent successfully:", {
-      channelId,
+      videoId,
       response,
       proxy: proxy ? "used" : "not used"
     })
