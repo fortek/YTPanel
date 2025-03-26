@@ -78,6 +78,46 @@ export default function ApiDocsPage() {
       }
     },
     {
+      title: "Get Vote ID",
+      method: "POST",
+      path: "/api/get-vote-id",
+      description: "Get YouTube live chat vote ID from video ID",
+      requestBody: {
+        videoId: "VIDEO_ID_HERE",
+        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
+      },
+      responses: {
+        200: {
+          continuationValue: "0ofMyAOAARpeQ2lrcUp3b1lWVU5VYW1veU9FczBSM2ROZFZGTVYwUjRaV2cyTm1wbkVndFBRMTlOU0dOS2RYUmhkeG9UNnFqZHVRRU5DZ3RQUTE5TlNHTktkWFJoZHlBQk1BQSUzRDABggEICAQYAiAAKACIAQGgAYGY9YeRnowDqAEAsgEA",
+          proxy: {
+            used: false
+          }
+        },
+        400: [
+          {
+            error: "Video ID is required"
+          },
+          {
+            error: "Invalid proxy format. Expected: IP:PORT:LOGIN:PASSWORD"
+          },
+          {
+            error: "Proxy is not working or not responding"
+          }
+        ],
+        404: [
+          {
+            error: "Live chat renderer not found"
+          },
+          {
+            error: "Continuation not found"
+          }
+        ],
+        500: {
+          error: "Failed to fetch vote ID"
+        }
+      }
+    },
+    {
       title: "Check Account",
       method: "POST",
       path: "/api/check-account",
