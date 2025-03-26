@@ -118,6 +118,41 @@ export default function ApiDocsPage() {
       }
     },
     {
+      title: "Send Message Chat",
+      method: "POST",
+      path: "/api/send-message-chat",
+      description: "Send a message to YouTube live chat",
+      requestBody: {
+        cookie: "YOUR_COOKIE_STRING",
+        word: "Message to send",
+        token: "CHAT_TOKEN (optional)",
+        videoId: "VIDEO_ID (optional, required if token is not provided)",
+        proxy: "IP:PORT:LOGIN:PASSWORD (optional)"
+      },
+      responses: {
+        200: {
+          visitorData: "VISITOR_DATA_HERE",
+          proxy: {
+            used: false
+          }
+        },
+        400: [
+          {
+            error: "Cookie and word are required"
+          },
+          {
+            error: "Either token or videoId is required"
+          },
+          {
+            error: "SAPISID cookie not found"
+          }
+        ],
+        500: {
+          error: "Failed to send message"
+        }
+      }
+    },
+    {
       title: "Check Account",
       method: "POST",
       path: "/api/check-account",
