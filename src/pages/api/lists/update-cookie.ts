@@ -32,18 +32,10 @@ async function processRequest(
     newCookieLength: newCookie.length
   })
 
-  // Проверяем содержимое файла
-  const fileContent = fs.readFileSync(filePath, 'utf-8')
-  const lines = fileContent.split('\n').filter(line => line.trim())
-  console.log("File content preview:", {
-    totalLines: lines.length,
-    firstLine: lines[0],
-    lastLine: lines[lines.length - 1]
-  })
-
   let found = false
   let lineIndex = -1
   let targetIndex = -1
+  let totalLines = 0
 
   // Process main file
   const writeStream = createWriteStream(tempPath)
@@ -55,23 +47,18 @@ async function processRequest(
 
   for await (const line of rl) {
     lineIndex++
+    totalLines++
     if (!line.trim()) continue
 
     const [cookie, lineEmail] = line.split("|")
     if (!lineEmail) {
-      console.log("Invalid line format:", { line, lineIndex })
+      console.log("Invalid line format:", { lineIndex })
       continue
     }
 
     const trimmedEmail = lineEmail.trim()
     const searchEmail = email.trim()
     
-    console.log("Comparing emails:", {
-      lineEmail: trimmedEmail,
-      searchEmail,
-      match: trimmedEmail === searchEmail
-    })
-
     if (trimmedEmail === searchEmail) {
       found = true
       targetIndex = lineIndex
@@ -86,7 +73,7 @@ async function processRequest(
 
   if (!found) {
     fs.unlinkSync(tempPath)
-    throw new Error(`Email "${email}" not found in file. Total lines processed: ${lineIndex + 1}`)
+    throw new Error(`Email "${email}" not found in file. Total lines processed: ${totalLines}`)
   }
 
   // Replace original file with temp file
@@ -127,7 +114,8 @@ async function processRequest(
   console.log("Request processed successfully:", {
     filePath,
     email,
-    targetIndex
+    targetIndex,
+    totalLines
   })
 }
 
