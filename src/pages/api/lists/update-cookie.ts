@@ -26,6 +26,21 @@ async function processRequest(
   const tempPath = path.join(process.cwd(), "uploaded_cookies", `${fileName}.tmp`)
   const cleanTempPath = path.join(process.cwd(), "uploaded_cookies", `${fileName}.clean.tmp`)
 
+  console.log("Processing request:", {
+    filePath,
+    email,
+    newCookieLength: newCookie.length
+  })
+
+  // Проверяем содержимое файла
+  const fileContent = fs.readFileSync(filePath, 'utf-8')
+  const lines = fileContent.split('\n').filter(line => line.trim())
+  console.log("File content preview:", {
+    totalLines: lines.length,
+    firstLine: lines[0],
+    lastLine: lines[lines.length - 1]
+  })
+
   let found = false
   let lineIndex = -1
   let targetIndex = -1
@@ -40,8 +55,24 @@ async function processRequest(
 
   for await (const line of rl) {
     lineIndex++
+    if (!line.trim()) continue
+
     const [cookie, lineEmail] = line.split("|")
-    if (lineEmail?.trim() === email.trim()) {
+    if (!lineEmail) {
+      console.log("Invalid line format:", { line, lineIndex })
+      continue
+    }
+
+    const trimmedEmail = lineEmail.trim()
+    const searchEmail = email.trim()
+    
+    console.log("Comparing emails:", {
+      lineEmail: trimmedEmail,
+      searchEmail,
+      match: trimmedEmail === searchEmail
+    })
+
+    if (trimmedEmail === searchEmail) {
       found = true
       targetIndex = lineIndex
       writeStream.write(`${newCookie}|${email}\n`)
@@ -55,7 +86,7 @@ async function processRequest(
 
   if (!found) {
     fs.unlinkSync(tempPath)
-    throw new Error("Email not found in file")
+    throw new Error(`Email "${email}" not found in file. Total lines processed: ${lineIndex + 1}`)
   }
 
   // Replace original file with temp file
@@ -92,6 +123,12 @@ async function processRequest(
     fs.unlinkSync(cleanFilePath)
   }
   fs.renameSync(cleanTempPath, cleanFilePath)
+
+  console.log("Request processed successfully:", {
+    filePath,
+    email,
+    targetIndex
+  })
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -143,7 +180,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     console.error("Error updating cookie:", error)
     return res.status(500).json({ 
-      error: "Failed to update cookie" 
+      error: error instanceof Error ? error.message : "Failed to update cookie" 
     })
   }
 }
