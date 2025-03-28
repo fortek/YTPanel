@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=16384 --max-http-header-size=32768\" NEXT_TELEMETRY_DISABLED=1 next dev",
+    "dev": "next dev",
+    "start": "node server.js",
     "build": "next build",
-    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
