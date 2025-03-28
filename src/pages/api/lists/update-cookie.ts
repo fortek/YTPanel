@@ -29,8 +29,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const filePath = path.join(process.cwd(), "uploaded_cookies", fileName)
     const cleanFilePath = path.join(process.cwd(), "uploaded_cookies", fileName.replace(".txt", "_clean.txt"))
-    const tempPath = path.join(process.cwd(), "uploaded_cookies", `${fileName}.tmp`)
-    const cleanTempPath = path.join(process.cwd(), "uploaded_cookies", `${fileName}.clean.tmp`)
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" })
@@ -39,9 +37,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let found = false
     let lineIndex = -1
     let targetIndex = -1
+    let updatedContent = ""
+    let cleanContent = ""
 
     // Process main file
-    const writeStream = createWriteStream(tempPath)
     const readStream = createReadStream(filePath)
     const rl = readline.createInterface({
       input: readStream,
@@ -54,25 +53,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (lineEmail?.trim() === email.trim()) {
         found = true
         targetIndex = lineIndex
-        writeStream.write(`${newCookie}|${email}\n`)
+        updatedContent += `${newCookie}|${email}\n`
       } else {
-        writeStream.write(`${line}\n`)
+        updatedContent += `${line}\n`
       }
     }
 
-    await new Promise(resolve => writeStream.end(resolve))
     rl.close()
 
     if (!found) {
-      fs.unlinkSync(tempPath)
       return res.status(404).json({ error: "Email not found in file" })
     }
 
-    // Replace original file with temp file
-    fs.renameSync(tempPath, filePath)
+    // Write updated content directly to the file
+    fs.writeFileSync(filePath, updatedContent, "utf-8")
 
-    // Create or update clean file
-    const cleanWriteStream = createWriteStream(cleanTempPath)
+    // Process clean file
     const cleanReadStream = fs.existsSync(cleanFilePath) 
       ? createReadStream(cleanFilePath)
       : createReadStream(filePath)
@@ -86,18 +82,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for await (const line of cleanRl) {
       lineIndex++
       if (lineIndex === targetIndex) {
-        cleanWriteStream.write(`${newCookie}\n`)
+        cleanContent += `${newCookie}\n`
       } else {
         const [cookies] = line.split("|")
-        cleanWriteStream.write(`${cookies.trim()}\n`)
+        cleanContent += `${cookies.trim()}\n`
       }
     }
 
-    await new Promise(resolve => cleanWriteStream.end(resolve))
     cleanRl.close()
 
-    // Replace clean file with temp file
-    fs.renameSync(cleanTempPath, cleanFilePath)
+    // Write clean content directly to the file
+    fs.writeFileSync(cleanFilePath, cleanContent, "utf-8")
 
     return res.status(200).json({ 
       success: true,
