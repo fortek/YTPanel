@@ -1,17 +1,25 @@
 import mongoose from 'mongoose'
 
-const cookieSchema = new mongoose.Schema({
-  email: { type: String, required: true },
-  cookie: { type: String, required: true },
-  updatedAt: { type: Date, default: Date.now }
+const cookieChunkSchema = new mongoose.Schema({
+  listId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  cookies: { type: [String], required: true },
+  chunkIndex: { type: Number, required: true }
+}, { 
+  timestamps: true,
+  versionKey: false
 })
 
 const cookieListSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  cookies: [cookieSchema],
-  cleanCookies: [String],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  totalCookies: { type: Number, required: true },
+  chunksCount: { type: Number, required: true }
+}, { 
+  timestamps: true,
+  versionKey: false
 })
 
-export const CookieList = mongoose.models.CookieList || mongoose.model('CookieList', cookieListSchema) 
+// Создаем составной индекс для быстрого поиска чанков
+cookieChunkSchema.index({ listId: 1, chunkIndex: 1 })
+
+export const CookieList = mongoose.models.CookieList || mongoose.model('CookieList', cookieListSchema)
+export const CookieChunk = mongoose.models.CookieChunk || mongoose.model('CookieChunk', cookieChunkSchema) 

@@ -1,9 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import connectDB from "@/lib/mongodb"
-import { CookieList } from "@/models/CookieList"
+import fs from "fs"
+import path from "path"
+import { createReadStream, createWriteStream } from "fs"
+import readline from "readline"
 
 export const config = {
   api: {
+    responseLimit: false,
     bodyParser: {
       sizeLimit: false
     },
@@ -15,41 +18,95 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" })
   }
 
-  const { fileName, email, newCookie } = req.body
-
-  if (!fileName || !email || !newCookie) {
-    return res.status(400).json({ error: "Missing required parameters" })
-  }
-
   try {
-    await connectDB()
+    const { fileName, newCookie, email } = req.body
 
-    // Находим список по имени файла
-    const list = await CookieList.findOne({ name: fileName })
-    if (!list) {
-      return res.status(404).json({ error: "List not found" })
+    if (!fileName || !newCookie || !email) {
+      return res.status(400).json({ 
+        error: "fileName, newCookie and email are required" 
+      })
     }
 
-    // Находим индекс cookie для обновления
-    const cookieIndex = list.cookies.findIndex((c: { email: string }) => c.email === email)
-    if (cookieIndex === -1) {
-      return res.status(404).json({ error: "Email not found in list" })
+    const filePath = path.join(process.cwd(), "uploaded_cookies", fileName)
+    const cleanFilePath = path.join(process.cwd(), "uploaded_cookies", fileName.replace(".txt", "_clean.txt"))
+    const tempPath = path.join(process.cwd(), "uploaded_cookies", `${fileName}.tmp`)
+    const cleanTempPath = path.join(process.cwd(), "uploaded_cookies", `${fileName}.clean.tmp`)
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "File not found" })
     }
 
-    // Обновляем cookie
-    list.cookies[cookieIndex].cookie = newCookie
-    list.cookies[cookieIndex].updatedAt = new Date()
-    
-    // Обновляем чистый список
-    list.cleanCookies[cookieIndex] = newCookie
-    list.updatedAt = new Date()
+    let found = false
+    let lineIndex = -1
+    let targetIndex = -1
 
-    // Сохраняем изменения
-    await list.save()
+    // Process main file
+    const writeStream = createWriteStream(tempPath)
+    const readStream = createReadStream(filePath)
+    const rl = readline.createInterface({
+      input: readStream,
+      crlfDelay: Infinity
+    })
 
-    return res.status(200).json({ message: "Cookie updated successfully" })
+    for await (const line of rl) {
+      lineIndex++
+      const [cookie, lineEmail] = line.split("|")
+      if (lineEmail?.trim() === email.trim()) {
+        found = true
+        targetIndex = lineIndex
+        writeStream.write(`${newCookie}|${email}\n`)
+      } else {
+        writeStream.write(`${line}\n`)
+      }
+    }
+
+    await new Promise(resolve => writeStream.end(resolve))
+    rl.close()
+
+    if (!found) {
+      fs.unlinkSync(tempPath)
+      return res.status(404).json({ error: "Email not found in file" })
+    }
+
+    // Replace original file with temp file
+    fs.renameSync(tempPath, filePath)
+
+    // Create or update clean file
+    const cleanWriteStream = createWriteStream(cleanTempPath)
+    const cleanReadStream = fs.existsSync(cleanFilePath) 
+      ? createReadStream(cleanFilePath)
+      : createReadStream(filePath)
+
+    const cleanRl = readline.createInterface({
+      input: cleanReadStream,
+      crlfDelay: Infinity
+    })
+
+    lineIndex = -1
+    for await (const line of cleanRl) {
+      lineIndex++
+      if (lineIndex === targetIndex) {
+        cleanWriteStream.write(`${newCookie}\n`)
+      } else {
+        const [cookies] = line.split("|")
+        cleanWriteStream.write(`${cookies.trim()}\n`)
+      }
+    }
+
+    await new Promise(resolve => cleanWriteStream.end(resolve))
+    cleanRl.close()
+
+    // Replace clean file with temp file
+    fs.renameSync(cleanTempPath, cleanFilePath)
+
+    return res.status(200).json({ 
+      success: true,
+      message: "Cookie updated successfully in both files" 
+    })
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Error processing request:`, error)
-    return res.status(500).json({ error: "Failed to update cookie" })
+    console.error("Error updating cookie:", error)
+    return res.status(500).json({ 
+      error: "Failed to update cookie" 
+    })
   }
 }
