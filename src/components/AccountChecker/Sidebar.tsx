@@ -5,7 +5,7 @@ import { useAccountLists } from "@/contexts/AccountListsContext"
 import { formatDistanceToNow } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Download, Loader2, Network, RefreshCw, FileText } from "lucide-react"
+import { Pencil, Trash2, Download, Loader2, Network, RefreshCw, FileText, FileDown } from "lucide-react"
 import { FileUpload } from "@/components/AccountChecker/FileUpload"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -27,6 +27,8 @@ export function Sidebar() {
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [updateSuccess, setUpdateSuccess] = useState<boolean | null>(null)
   const [updateMessage, setUpdateMessage] = useState<string | null>(null)
+  const [renamingListId, setRenamingListId] = useState<string | null>(null)
+  const [downloadingListId, setDownloadingListId] = useState<string | null>(null)
 
   const handleListSelect = (id: string) => {
     setActiveList(id)
@@ -36,23 +38,38 @@ export function Sidebar() {
     if (!selectedListId || !newName.trim()) return
 
     try {
+      setRenamingListId(selectedListId)
       await renameList(selectedListId, newName.trim())
+      
+      if (selectedListId === activeListId) {
+        setActiveList(newName.trim())
+      }
+      
       setIsRenameDialogOpen(false)
       setNewName("")
-      setSelectedListId(null)
-      toast.success("List renamed successfully")
+      setSelectedListId(newName.trim())
+      toast.success("Список успешно переименован")
     } catch (error) {
-      toast.error("Failed to rename list")
+      toast.error("Не удалось переименовать список")
+    } finally {
+      setRenamingListId(null)
     }
   }
 
   const handleDownload = async (id: string) => {
     try {
+      setDownloadingListId(id)
       await downloadList(id)
-      toast.success("List downloaded successfully")
+      toast.success("Список успешно скачан")
     } catch (error) {
-      toast.error("Failed to download list")
+      toast.error("Не удалось скачать список")
+    } finally {
+      setDownloadingListId(null)
     }
+  }
+
+  const handleDownloadWithoutEmail = (id: string) => {
+    window.location.href = `/api/lists/${id}/download?includeEmail=false`
   }
 
   const openRenameDialog = (id: string, currentName: string) => {
@@ -136,7 +153,8 @@ export function Sidebar() {
                         {formatDistanceToNow(list.createdAt, { addSuffix: true })}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -144,7 +162,9 @@ export function Sidebar() {
                           e.stopPropagation()
                           openRenameDialog(list.id, list.name)
                         }}
+                        disabled={renamingListId === list.id}
                         className="h-8 w-8"
+                        title="Rename list"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -155,9 +175,23 @@ export function Sidebar() {
                           e.stopPropagation()
                           handleDownload(list.id)
                         }}
+                        disabled={downloadingListId === list.id}
                         className="h-8 w-8"
+                        title="Download list"
                       >
                         <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownloadWithoutEmail(list.id)
+                        }}
+                        className="h-8 w-8"
+                        title="Download without email"
+                      >
+                        <FileDown className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -167,6 +201,7 @@ export function Sidebar() {
                           removeList(list.id)
                         }}
                         className="h-8 w-8"
+                        title="Remove list"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -217,33 +252,48 @@ export function Sidebar() {
       <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
         <DialogContent className="bg-zinc-900 border border-zinc-800 shadow-lg sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-zinc-50">Rename List</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-zinc-50">Переименовать список</DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Enter a new name for your list below.
+              Введите новое имя для списка.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Enter new name"
+              placeholder="Введите новое имя"
               className="w-full bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
               autoFocus
+              disabled={renamingListId !== null}
             />
           </div>
           <DialogFooter className="sm:justify-end gap-2">
             <Button
               variant="outline"
-              onClick={() => setIsRenameDialogOpen(false)}
+              onClick={() => {
+                setIsRenameDialogOpen(false)
+                setNewName("")
+                setSelectedListId(null)
+                setRenamingListId(null)
+              }}
               className="bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              disabled={renamingListId !== null}
             >
-              Cancel
+              Отмена
             </Button>
             <Button 
               onClick={handleRename}
               className="bg-blue-600 text-white hover:bg-blue-700"
+              disabled={renamingListId !== null || !newName.trim() || newName.trim() === selectedListId}
             >
-              Save Changes
+              {renamingListId !== null ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Переименование...
+                </>
+              ) : (
+                "Сохранить"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -291,26 +291,59 @@ export default function ApiDocsPage() {
       path: "/api/lists/update-cookie",
       description: "Update a cookie value for a specific email in a file",
       requestBody: {
-        fileName: "example.txt",
-        newCookie: "new_cookie_value",
-        email: "user@example.com"
+        list: "List name",
+        newCookie: "New cookie value",
+        email: "Email to find the record"
       },
       responses: {
         200: {
-          success: true,
-          message: "Cookie updated successfully in both files"
+          status: 200,
+          body: {
+            message: "Cookie updated successfully"
+          }
         },
-        400: {
-          error: "fileName, newCookie and email are required"
+        errors: [
+          {
+            status: 400,
+            body: {
+              message: "Missing required fields"
+            }
+          },
+          {
+            status: 404,
+            body: {
+              message: "List not found"
+            }
+          },
+          {
+            status: 404,
+            body: {
+              message: "Email not found in list"
+            }
+          },
+          {
+            status: 500,
+            body: {
+              message: "Failed to update cookie"
+            }
+          }
+        ]
+      },
+      example: {
+        request: {
+          method: "POST",
+          url: "/api/lists/update-cookie",
+          body: {
+            list: "example_list",
+            newCookie: "new_cookie_value",
+            email: "user@example.com"
+          }
         },
-        404: {
-          error: "File not found"
-        },
-        405: {
-          error: "Method not allowed"
-        },
-        500: {
-          error: "Failed to update cookie"
+        response: {
+          status: 200,
+          body: {
+            message: "Cookie updated successfully"
+          }
         }
       }
     },
@@ -329,18 +362,6 @@ export default function ApiDocsPage() {
               url: "/uploaded_cookies/example.txt"
             }
           ]
-        }
-      }
-    },
-    {
-      title: "Download File",
-      method: "GET",
-      path: "/uploaded_cookies/:filename",
-      description: "Download a specific cookie file",
-      responses: {
-        200: "File content (text/plain)",
-        404: {
-          message: "File not found"
         }
       }
     }

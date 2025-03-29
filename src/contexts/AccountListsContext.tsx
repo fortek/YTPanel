@@ -220,11 +220,16 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       }
 
       const updatedList = await response.json()
+      
+      // Обновляем id и name в списках
       setLists(prev => prev.map(list => 
-        list.id === id ? { ...list, name: updatedList.name } : list
+        list.id === id ? { ...list, id: newName, name: newName } : list
       ))
+
+      // Обновляем активный список если он был переименован
       if (activeList?.id === id) {
-        setActiveList(prev => prev ? { ...prev, name: updatedList.name } : null)
+        setActiveList(prev => prev ? { ...prev, id: newName, name: newName } : null)
+        setActiveListId(newName)
       }
     } catch (error) {
       console.error("Error renaming list:", error)

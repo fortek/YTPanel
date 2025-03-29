@@ -270,7 +270,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
                 </Tooltip>
               </TooltipProvider>
             ) : (
-              "Без прокси"
+              "Without proxy"
             )}
           </div>
           <div className="text-right">

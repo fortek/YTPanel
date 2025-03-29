@@ -1,118 +1,109 @@
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatDistanceToNow } from "date-fns"
-import Link from "next/link"
-import { Download, ArrowLeft } from "lucide-react"
+import { useAccountLists } from "@/contexts/AccountListsContext"
 import { Button } from "@/components/ui/button"
-import "@/lib/utils"
+import { FileText, Download, FileDown, Copy } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
+import { enUS } from "date-fns/locale"
+import { toast } from "sonner"
 
-interface FileInfo {
-  name: string
-  size: number
-  createdAt: string
-  downloadUrl: string
-}
-
-export default function UploadedCookiesPage() {
-  const [files, setFiles] = useState<FileInfo[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+export default function UploadedCookies() {
+  const { lists, isLoading } = useAccountLists()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    fetchFiles()
+    setMounted(true)
   }, [])
 
-  const fetchFiles = async () => {
-    try {
-      const response = await fetch("/api/files")
-      if (response.ok) {
-        const data = await response.json()
-        setFiles(data.files || [])
-      }
-    } catch (error) {
-      console.error('Error fetching files:', error)
-    } finally {
-      setIsLoading(false)
-    }
+  const handleCopyUrl = (url: string) => {
+    navigator.clipboard.writeText(url)
+    toast.success("URL copied to clipboard")
+  }
+
+  if (!mounted) {
+    return null
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 py-12 px-4">
-        <div className="max-w-[1000px] mx-auto">
-          <div className="text-zinc-50">Loading...</div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 py-12 px-4">
-      <div className="max-w-[1000px] mx-auto">
-        <div className="flex items-center justify-between mb-12">
-          <div>
-            <h1 className="text-4xl font-bold text-zinc-50 mb-2">Uploaded Cookies</h1>
-            <p className="text-zinc-400 text-lg">
-              List of all uploaded cookie files
-            </p>
-          </div>
-          <Link href="/">
-            <Button variant="outline" className="border-zinc-800 hover:bg-zinc-800">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to App
-            </Button>
-          </Link>
-        </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-6">Uploaded Lists</h1>
+      <div className="grid gap-4">
+        {lists.map((list) => {
+          const fullUrl = `${window.location.origin}/api/lists/${list.id}/download`
+          const fullUrlWithoutEmail = `${window.location.origin}/api/lists/${list.id}/download?includeEmail=false`
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Uploaded Cookies Files</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Download URL</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {files.map((file) => (
-                  <TableRow key={file.name}>
-                    <TableCell className="font-medium">{file.name}</TableCell>
-                    <TableCell>{(file.size / 1024).toFixed(2)} KB</TableCell>
-                    <TableCell>
-                      {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
-                    </TableCell>
-                    <TableCell>
-                      <a 
-                        href={file.downloadUrl} 
-                        className="text-blue-500 hover:text-blue-400 underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {file.downloadUrl}
-                      </a>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <a 
-                        href={file.downloadUrl}
-                        download
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </a>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+          return (
+            <div
+              key={list.id}
+              className="bg-zinc-900 border border-zinc-800 rounded-lg p-4"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">{list.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {formatDistanceToNow(list.createdAt, { addSuffix: true, locale: enUS })}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => window.location.href = fullUrl}
+                  >
+                    <Download className="h-4 w-4" />
+                    With email
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => window.location.href = fullUrlWithoutEmail}
+                  >
+                    <FileDown className="h-4 w-4" />
+                    Without email
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">URL with email:</span>
+                  <code className="bg-zinc-800 px-2 py-1 rounded flex-1">{fullUrl}</code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleCopyUrl(fullUrl)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">URL without email:</span>
+                  <code className="bg-zinc-800 px-2 py-1 rounded flex-1">{fullUrlWithoutEmail}</code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleCopyUrl(fullUrlWithoutEmail)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

@@ -1,4 +1,57 @@
-import redisClient, { ensureConnection } from './redis';
+import redisClient from "./redis"
+
+let reconnectAttempts = 0
+const MAX_RECONNECT_ATTEMPTS = 5
+const RECONNECT_INTERVAL = 5000 // 5 seconds
+
+// Функция для проверки и восстановления соединения
+export async function ensureConnection() {
+  try {
+    if (!redisClient.isOpen) {
+      await redisClient.connect()
+      console.log("Redis connection established")
+    }
+    return true
+  } catch (error) {
+    console.error("Failed to connect to Redis:", error)
+    return false
+  }
+}
+
+// Функция для обработки отключения
+redisClient.on("error", async (error) => {
+  console.error("Redis connection error:", error)
+  await handleReconnect()
+})
+
+redisClient.on("end", async () => {
+  console.log("Redis connection closed")
+  await handleReconnect()
+})
+
+// Функция для попытки переподключения
+async function handleReconnect() {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.error("Max reconnection attempts reached")
+    return
+  }
+
+  reconnectAttempts++
+  console.log(`Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`)
+
+  setTimeout(async () => {
+    const success = await ensureConnection()
+    if (success) {
+      reconnectAttempts = 0
+      console.log("Successfully reconnected to Redis")
+    } else {
+      await handleReconnect()
+    }
+  }, RECONNECT_INTERVAL)
+}
+
+// Инициализация соединения при запуске
+ensureConnection().catch(console.error)
 
 export interface CookieData {
   name: string;
@@ -134,36 +187,29 @@ export const renameListInRedis = async (oldName: string, newName: string) => {
   try {
     await ensureConnection();
     
-    // Получаем информацию о старом списке
+    // Получаем информацию о старом списке для проверки существования
     const oldListKey = `list:${oldName}`;
     const listInfo = await redisClient.hGetAll(oldListKey);
     
     if (!listInfo.total) return false;
 
     const total = parseInt(listInfo.total);
-
-    // Создаем новый список
     const newListKey = `list:${newName}`;
-    await redisClient.hSet(newListKey, 'total', listInfo.total);
-    await redisClient.hSet(newListKey, 'createdAt', listInfo.createdAt);
 
-    // Переносим все cookies
+    // Используем pipeline для атомарного переименования
+    const pipeline = redisClient.multi();
+
+    // Переименовываем основной ключ списка
+    pipeline.rename(oldListKey, newListKey);
+
+    // Переименовываем все ключи cookies
     for (let i = 0; i < total; i++) {
       const oldCookieKey = `cookies:${oldName}:${i}`;
       const newCookieKey = `cookies:${newName}:${i}`;
-      
-      const cookieData = await redisClient.hGetAll(oldCookieKey);
-      if (cookieData) {
-        await redisClient.hSet(newCookieKey, 'index', cookieData.index);
-        await redisClient.hSet(newCookieKey, 'email', cookieData.email);
-        await redisClient.hSet(newCookieKey, 'cookie', cookieData.cookie);
-        await redisClient.del(oldCookieKey);
-      }
+      pipeline.rename(oldCookieKey, newCookieKey);
     }
 
-    // Удаляем старый список
-    await redisClient.del(oldListKey);
-
+    await pipeline.exec();
     return true;
   } catch (error) {
     console.error('Error renaming list in Redis:', error);
