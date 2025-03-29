@@ -8,14 +8,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Логируем данные запроса
+    console.log("Update Cookie Request:", {
+      method: req.method,
+      url: req.url,
+      body: {
+        list: req.body.list,
+        newCookie: req.body.newCookie ? `[length: ${req.body.newCookie.length}]` : undefined,
+        email: req.body.email
+      },
+      headers: {
+        "content-type": req.headers["content-type"],
+        "user-agent": req.headers["user-agent"]
+      }
+    })
+
     const isConnected = await ensureConnection()
     if (!isConnected) {
+      console.error("Redis connection failed")
       return res.status(500).json({ error: "Failed to connect to Redis" })
     }
     
     const { list, newCookie, email } = req.body
 
     if (!list || !newCookie || !email) {
+      console.warn("Missing required fields:", { 
+        list, 
+        newCookie: newCookie ? `[length: ${newCookie.length}]` : undefined, 
+        email 
+      })
       return res.status(400).json({ 
         error: "Missing required parameters",
         details: {
@@ -31,6 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const listInfo = await redisClient.hGetAll(listKey)
     
     if (!listInfo || !listInfo.total) {
+      console.warn("List not found:", { listKey })
       return res.status(404).json({ error: "List not found" })
     }
 
@@ -49,11 +71,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           email: email
         })
         found = true
+        console.log("Cookie updated successfully:", { 
+          cookieKey, 
+          email,
+          cookieLength: newCookie.length
+        })
         break
       }
     }
 
     if (!found) {
+      console.warn("Email not found in list:", { list, email })
       return res.status(404).json({ error: "Email not found in list" })
     }
 
