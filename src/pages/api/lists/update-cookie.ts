@@ -85,6 +85,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: "Email not found in list" })
     }
 
+    // Логируем успешный ответ
+    console.log("Update Cookie Response:", {
+      status: 200,
+      message: "Cookie updated successfully",
+      data: {
+        list,
+        email,
+        cookieLength: newCookie.length
+      }
+    })
+
     return res.status(200).json({ message: "Cookie updated successfully" })
   } catch (error) {
     console.error("Error updating cookie:", error)
