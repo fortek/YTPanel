@@ -10,19 +10,21 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface FilePreview {
-  lines: number
-  content: string[]
-  size: string
+  name: string;
+  size: string;
+  lines: number;
+  preview: string[];
 }
 
 interface FileUploadProps {
   onFileSelect: (file: File, name: string) => Promise<void>
   accept?: string
   showNameInput?: boolean
+  onSuccess?: () => void
 }
 
-export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true }: FileUploadProps) {
-  const { addList } = useAccountLists()
+export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true, onSuccess }: FileUploadProps) {
+  const { lists, setLists } = useAccountLists()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listName, setListName] = useState("")
@@ -61,35 +63,71 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
   }, [])
 
   const handleFileSelect = async (file: File) => {
-    if (!file.name.endsWith(accept)) {
-      setError(`Please select a file with extension ${accept}`)
-      return
-    }
+    setSelectedFile(file);
+    setError(null);
 
     try {
-      const text = await file.text()
-      const lines = text.split('\n').filter(line => line.trim())
-      setFilePreview({
-        lines: lines.length,
-        content: lines.slice(0, 5), // Show only first 5 lines
-        size: formatFileSize(file.size)
-      })
-      setSelectedFile(file)
-      setError(null)
+      // Создаем объект для чтения файла
+      const reader = new FileReader();
+      const chunkSize = 1024 * 1024; // 1MB chunks
+      let offset = 0;
+      let lineCount = 0;
+      let previewLines: string[] = [];
+
+      const readChunk = () => {
+        const slice = file.slice(offset, offset + chunkSize);
+        reader.readAsText(slice);
+      };
+
+      reader.onload = (e) => {
+        if (!e.target?.result) return;
+
+        const chunk = e.target.result as string;
+        const lines = chunk.split('\n');
+        
+        // Подсчитываем строки
+        lineCount += lines.length;
+        
+        // Сохраняем первые 5 строк для превью
+        if (offset === 0) {
+          previewLines = lines.slice(0, 5).filter(line => line.trim());
+        }
+
+        // Если есть еще данные для чтения
+        offset += chunkSize;
+        if (offset < file.size) {
+          readChunk();
+        } else {
+          // Финальное обновление превью
+          setFilePreview({
+            name: file.name,
+            size: formatFileSize(file.size),
+            lines: lineCount,
+            preview: previewLines
+          });
+        }
+      };
+
+      reader.onerror = () => {
+        setError("Error reading file");
+      };
+
+      // Начинаем чтение
+      readChunk();
     } catch (err) {
-      setError("Error reading file")
-      console.error("File reading error:", err)
+      console.error("Error processing file:", err);
+      setError("Error processing file");
     }
-  }
+  };
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return
     handleFileSelect(e.target.files[0])
   }
 
-  const handleSubmit = async () => {
-    if (!selectedFile || (showNameInput && !listName.trim())) {
-      setError(showNameInput ? "Please enter a list name and select a file" : "Please select a file")
+  const handleUpload = async () => {
+    if (!selectedFile || !listName.trim()) {
+      setError("Please enter a list name and select a file")
       return
     }
 
@@ -97,58 +135,112 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
     setUploadProgress(0)
     
     try {
-      // Start reading file
-      setUploadProgress(10)
-      const text = await selectedFile.text()
-      
-      // Process lines
-      setUploadProgress(30)
-      const lines = text.split("\n").filter(line => line.trim())
-      
-      if (lines.length === 0) {
-        throw new Error("File is empty")
+      const reader = new FileReader();
+      const chunkSize = 1024 * 1024; // 1MB chunks
+      let offset = 0;
+      let allLines: string[] = [];
+
+      const readChunk = () => {
+        const slice = selectedFile.slice(offset, offset + chunkSize);
+        reader.readAsText(slice);
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        reader.onload = (e) => {
+          if (!e.target?.result) return;
+
+          const chunk = e.target.result as string;
+          const lines = chunk.split('\n').filter(line => line.trim());
+          allLines.push(...lines);
+
+          // Обновляем прогресс
+          const progress = Math.min(90, (offset / selectedFile.size) * 100);
+          setUploadProgress(Math.round(progress));
+
+          // Если есть еще данные для чтения
+          offset += chunkSize;
+          if (offset < selectedFile.size) {
+            readChunk();
+          } else {
+            resolve();
+          }
+        };
+
+        reader.onerror = () => reject(new Error("Error reading file"));
+
+        // Начинаем чтение
+        readChunk();
+      });
+
+      if (allLines.length === 0) {
+        throw new Error("File is empty");
       }
 
-      // Prepare data
-      setUploadProgress(50)
+      // Отправляем данные на сервер
+      setUploadProgress(95);
+      const response = await fetch('/api/lists/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: listName.trim(),
+          content: allLines.join('\n')
+        })
+      });
 
-      // Upload to server
-      setUploadProgress(70)
-      await onFileSelect(selectedFile, showNameInput ? listName : selectedFile.name)
+      if (!response.ok) {
+        throw new Error('Failed to upload file');
+      }
+
+      const data = await response.json();
       
       // Complete
-      setUploadProgress(100)
-      setListName("")
-      setSelectedFile(null)
-      setFilePreview(null)
+      setUploadProgress(100);
+      setListName("");
+      setSelectedFile(null);
+      setFilePreview(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+        fileInputRef.current.value = "";
       }
+
+      // Обновляем список после успешной загрузки
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      // Добавляем новый список в контекст
+      const newList = {
+        id: data.id,
+        name: listName.trim(),
+        totalCookies: data.total,
+        createdAt: new Date().toISOString()
+      };
+      setLists([newList, ...lists]);
+
     } catch (err) {
-      console.error("Upload error:", err)
-      setError(err instanceof Error ? err.message : "Error processing file")
+      console.error("Upload error:", err);
+      setError(err instanceof Error ? err.message : "Error processing file");
     } finally {
-      setIsLoading(false)
-      setTimeout(() => setUploadProgress(0), 1000)
+      setIsLoading(false);
+      setTimeout(() => setUploadProgress(0), 1000);
     }
   }
 
   return (
     <div className="space-y-6 max-w-xl mx-auto">
-      {showNameInput && (
-        <div className="space-y-2">
-          <Label htmlFor="listName">List Name</Label>
-          <Input
-            id="listName"
-            value={listName}
-            onChange={(e) => setListName(e.target.value)}
-            placeholder="Enter a name for this list"
-            disabled={isLoading}
-            required
-            className="w-full"
-          />
-        </div>
-      )}
+      <div className="space-y-2">
+        <Label htmlFor="listName">List Name</Label>
+        <Input
+          id="listName"
+          value={listName}
+          onChange={(e) => setListName(e.target.value)}
+          placeholder="Enter a name for this list"
+          disabled={isLoading}
+          required
+          className="w-full"
+        />
+      </div>
 
       <input
         type="file"
@@ -210,7 +302,7 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg text-left">
                   <p className="text-sm font-medium mb-2">Preview:</p>
                   <div className="space-y-1">
-                    {filePreview.content.map((line, index) => (
+                    {filePreview.preview.map((line, index) => (
                       <p key={index} className="text-xs font-mono truncate">
                         {line}
                       </p>
@@ -227,7 +319,7 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
               <Button
                 onClick={(e) => {
                   e.stopPropagation()
-                  handleSubmit()
+                  handleUpload()
                 }}
                 disabled={isLoading || (showNameInput && !listName.trim())}
                 className="w-full"

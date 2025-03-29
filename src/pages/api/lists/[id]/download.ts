@@ -1,13 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import fs from "fs"
-import path from "path"
+import { getCookiesFromRedis } from "@/lib/redis-utils"
 
 export const config = {
   api: {
-    responseLimit: false,
-    bodyParser: {
-      sizeLimit: false
-    },
+    responseLimit: '1024mb'
   },
 }
 
@@ -18,24 +14,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const { id } = req.query
-    const listsDir = path.join(process.cwd(), "uploaded_cookies")
-    const filePath = path.join(listsDir, `${id}.txt`)
-    const metaFilePath = path.join(listsDir, `${id}.meta.json`)
+    if (typeof id !== "string") {
+      return res.status(400).json({ message: "Invalid list ID" })
+    }
 
-    if (!fs.existsSync(filePath)) {
+    const list = await getCookiesFromRedis(id)
+    if (!list) {
       return res.status(404).json({ message: "List not found" })
     }
 
-    let fileName = `${id}.txt`
-    if (fs.existsSync(metaFilePath)) {
-      const meta = JSON.parse(fs.readFileSync(metaFilePath, "utf-8"))
-      fileName = `${meta.name}.txt`
-    }
+    // Формируем содержимое файла
+    const fileContent = list.cookies.map(cookie => 
+      `${cookie.cookie}${cookie.email ? `|${cookie.email}` : ''}`
+    ).join('\n')
 
-    const fileContent = fs.readFileSync(filePath, "utf-8")
-    
     res.setHeader("Content-Type", "text/plain")
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`)
+    res.setHeader("Content-Disposition", `attachment; filename="${list.name}.txt"`)
     res.send(fileContent)
   } catch (error) {
     console.error("Error downloading list:", error)

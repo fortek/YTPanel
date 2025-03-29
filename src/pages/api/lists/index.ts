@@ -1,13 +1,15 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import fs from "fs"
 import path from "path"
+import { getCookiesFromRedis } from "@/lib/redis-utils"
+import redisClient, { ensureConnection } from "@/lib/redis"
 
 export const config = {
   api: {
-    responseLimit: false,
     bodyParser: {
-      sizeLimit: '1gb'
+      sizeLimit: '1024mb'
     },
+    responseLimit: '1024mb'
   },
 }
 
@@ -18,13 +20,38 @@ if (!fs.existsSync(LISTS_DIR)) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  switch (req.method) {
-    case "GET":
-      return getLists(res)
-    case "POST":
-      return createList(req, res)
-    default:
-      return res.status(405).json({ error: "Method not allowed" })
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" })
+  }
+
+  try {
+    await ensureConnection()
+    
+    // Получаем все ключи списков
+    const keys = await redisClient.keys("list:*")
+    const lists = []
+
+    // Получаем информацию о каждом списке
+    for (const key of keys) {
+      const listInfo = await redisClient.hGetAll(key)
+      if (listInfo.total) {
+        const name = key.split(":")[1]
+        lists.push({
+          id: name,
+          name: name,
+          totalCookies: parseInt(listInfo.total),
+          createdAt: listInfo.createdAt
+        })
+      }
+    }
+
+    // Сортируем по дате создания (новые сверху)
+    lists.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    return res.status(200).json(lists)
+  } catch (error) {
+    console.error("Error getting lists:", error)
+    return res.status(500).json({ error: "Failed to get lists" })
   }
 }
 

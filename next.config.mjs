@@ -4,6 +4,12 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['sharp']
   },
+  api: {
+    bodyParser: {
+      sizeLimit: '1024mb'
+    },
+    responseLimit: '1024mb'
+  },
   webpack: (config, { dev, isServer }) => {
     // Увеличиваем лимиты для режима разработки
     if (dev) {

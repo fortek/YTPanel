@@ -1,12 +1,13 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import fs from "fs"
 import path from "path"
+import { getCookiesFromRedis, deleteListFromRedis, renameListInRedis } from "@/lib/redis-utils"
 
 export const config = {
   api: {
-    responseLimit: false,
+    responseLimit: '1024mb',
     bodyParser: {
-      sizeLimit: false
+      sizeLimit: '1024mb'
     },
   },
 }
@@ -22,11 +23,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   switch (req.method) {
     case "GET":
-      return getList(id, res)
+      try {
+        const list = await getCookiesFromRedis(id)
+        
+        if (!list) {
+          return res.status(404).json({ error: "List not found" })
+        }
+
+        // Форматируем данные для фронтенда
+        const formattedList = {
+          id,
+          name: list.name,
+          createdAt: list.createdAt,
+          accounts: list.cookies.map(cookie => 
+            `${cookie.cookie}${cookie.email ? `|${cookie.email}` : ''}`
+          )
+        }
+
+        return res.status(200).json(formattedList)
+      } catch (error) {
+        console.error("Error getting list:", error)
+        return res.status(500).json({ error: "Failed to get list" })
+      }
+
     case "PATCH":
-      return renameList(id, req, res)
+      try {
+        const { name } = req.body
+        if (!name) {
+          return res.status(400).json({ error: "New name is required" })
+        }
+
+        const success = await renameListInRedis(id, name)
+        if (!success) {
+          return res.status(404).json({ error: "List not found or rename failed" })
+        }
+
+        return res.status(200).json({ id: name, name })
+      } catch (error) {
+        console.error("Error renaming list:", error)
+        return res.status(500).json({ error: "Failed to rename list" })
+      }
+
     case "DELETE":
-      return deleteList(id, res)
+      try {
+        const success = await deleteListFromRedis(id)
+        if (!success) {
+          return res.status(404).json({ error: "List not found or delete failed" })
+        }
+
+        return res.status(200).json({ success: true })
+      } catch (error) {
+        console.error("Error deleting list:", error)
+        return res.status(500).json({ error: "Failed to delete list" })
+      }
+
     default:
       return res.status(405).json({ error: "Method not allowed" })
   }

@@ -3,12 +3,13 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 interface AccountList {
   id: string
   name: string
-  accounts: string[]
-  createdAt: Date
+  totalCookies: number
+  createdAt: string
 }
 
 interface AccountListsContextType {
   lists: AccountList[]
+  setLists: (lists: AccountList[]) => void
   activeListId: string | null
   activeList: AccountList | null
   addList: (name: string, accounts: string[]) => Promise<void>
@@ -41,12 +42,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       }
       
       const data = await response.json()
-      const listsWithoutAccounts = data.map((list: any) => ({
-        ...list,
-        createdAt: new Date(list.createdAt),
-        accounts: []
-      }))
-      setLists(listsWithoutAccounts)
+      setLists(data)
     } catch (error) {
       setError("Failed to load account lists")
       console.error("Error loading lists:", error)
@@ -143,22 +139,24 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`/api/lists/${id}`, {
         method: "DELETE"
-      })
+      });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error("Failed to delete list")
+        throw new Error(data.error || "Failed to delete list");
       }
 
-      setLists(prev => prev.filter(list => list.id !== id))
+      setLists(prev => prev.filter(list => list.id !== id));
       if (activeListId === id) {
-        setActiveListId(null)
-        setActiveList(null)
+        setActiveListId(null);
+        setActiveList(null);
       }
     } catch (error) {
-      console.error("Error removing list:", error)
-      throw error
+      console.error("Error removing list:", error);
+      throw error;
     }
-  }
+  };
 
   const renameList = async (id: string, newName: string) => {
     try {
@@ -201,6 +199,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     <AccountListsContext.Provider 
       value={{ 
         lists, 
+        setLists,
         activeListId,
         activeList,
         addList, 
