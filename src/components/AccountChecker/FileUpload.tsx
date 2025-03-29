@@ -127,105 +127,113 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
 
   const handleUpload = async () => {
     if (!selectedFile || !listName.trim()) {
-      setError("Please enter a list name and select a file")
-      return
+      setError("Please enter a list name and select a file");
+      return;
     }
 
-    setIsLoading(true)
-    setUploadProgress(0)
+    setIsLoading(true);
+    setUploadProgress(0);
     
     try {
       const reader = new FileReader();
-      const chunkSize = 1024 * 1024; // 1MB chunks
+      const chunkSize = 5 * 1024 * 1024; // 5MB chunks
       let offset = 0;
-      let allLines: string[] = [];
+      let currentChunk = 0;
+      const totalChunks = Math.ceil(selectedFile.size / chunkSize);
 
-      const readChunk = () => {
+      const readNextChunk = async () => {
         const slice = selectedFile.slice(offset, offset + chunkSize);
         reader.readAsText(slice);
       };
 
-      await new Promise<void>((resolve, reject) => {
-        reader.onload = (e) => {
-          if (!e.target?.result) return;
+      reader.onload = async (e) => {
+        if (!e.target?.result) return;
 
-          const chunk = e.target.result as string;
-          const lines = chunk.split('\n').filter(line => line.trim());
-          allLines.push(...lines);
+        const chunk = e.target.result as string;
+        
+        try {
+          // Отправляем чанк
+          const response = await fetch('/api/lists/chunk-upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: listName.trim(),
+              chunk,
+              chunkIndex: currentChunk,
+              totalChunks
+            })
+          });
 
+          let data;
+          try {
+            data = await response.json();
+          } catch (error) {
+            console.error("Error parsing response:", error);
+            throw new Error("Failed to parse server response");
+          }
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to upload chunk');
+          }
+          
           // Обновляем прогресс
-          const progress = Math.min(90, (offset / selectedFile.size) * 100);
+          const progress = Math.min(95, ((currentChunk + 1) / totalChunks) * 100);
           setUploadProgress(Math.round(progress));
 
           // Если есть еще данные для чтения
           offset += chunkSize;
-          if (offset < selectedFile.size) {
-            readChunk();
-          } else {
-            resolve();
+          currentChunk++;
+
+          if (currentChunk < totalChunks) {
+            readNextChunk();
+          } else if (data.isComplete) {
+            // Загрузка завершена успешно
+            setUploadProgress(100);
+            setListName("");
+            setSelectedFile(null);
+            setFilePreview(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+
+            // Обновляем список после успешной загрузки
+            if (onSuccess) {
+              onSuccess();
+            }
+
+            // Добавляем новый список в контекст
+            const newList = {
+              id: data.id,
+              name: listName.trim(),
+              totalCookies: data.total,
+              createdAt: new Date().toISOString()
+            };
+            setLists([newList, ...lists]);
           }
-        };
-
-        reader.onerror = () => reject(new Error("Error reading file"));
-
-        // Начинаем чтение
-        readChunk();
-      });
-
-      if (allLines.length === 0) {
-        throw new Error("File is empty");
-      }
-
-      // Отправляем данные на сервер
-      setUploadProgress(95);
-      const response = await fetch('/api/lists/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: listName.trim(),
-          content: allLines.join('\n')
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload file');
-      }
-
-      const data = await response.json();
-      
-      // Complete
-      setUploadProgress(100);
-      setListName("");
-      setSelectedFile(null);
-      setFilePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-
-      // Обновляем список после успешной загрузки
-      if (onSuccess) {
-        onSuccess();
-      }
-
-      // Добавляем новый список в контекст
-      const newList = {
-        id: data.id,
-        name: listName.trim(),
-        totalCookies: data.total,
-        createdAt: new Date().toISOString()
+        } catch (err) {
+          console.error("Chunk upload error:", err);
+          throw err;
+        }
       };
-      setLists([newList, ...lists]);
 
+      reader.onerror = () => {
+        throw new Error("Error reading file");
+      };
+
+      // Начинаем чтение первого чанка
+      readNextChunk();
     } catch (err) {
       console.error("Upload error:", err);
       setError(err instanceof Error ? err.message : "Error processing file");
     } finally {
-      setIsLoading(false);
-      setTimeout(() => setUploadProgress(0), 1000);
+      if (!isLoading) {
+        setIsLoading(false);
+        setTimeout(() => setUploadProgress(0), 1000);
+      }
     }
-  }
+  };
 
   return (
     <div className="space-y-6 max-w-xl mx-auto">

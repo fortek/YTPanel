@@ -16,6 +16,8 @@ const LISTS_DIR = path.join(process.cwd(), "uploaded_cookies")
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query
+  const page = parseInt(req.query.page as string) || 1
+  const pageSize = parseInt(req.query.pageSize as string) || 10000
 
   if (typeof id !== "string") {
     return res.status(400).json({ error: "Invalid list ID" })
@@ -30,12 +32,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(404).json({ error: "List not found" })
         }
 
+        // Вычисляем диапазон для текущей страницы
+        const start = (page - 1) * pageSize
+        const end = Math.min(start + pageSize, list.cookies.length)
+        const pageData = list.cookies.slice(start, end)
+
         // Форматируем данные для фронтенда
         const formattedList = {
           id,
           name: list.name,
           createdAt: list.createdAt,
-          accounts: list.cookies.map(cookie => 
+          total: list.total,
+          pagination: {
+            page,
+            pageSize,
+            totalPages: Math.ceil(list.total / pageSize),
+            hasMore: end < list.total
+          },
+          accounts: pageData.map(cookie => 
             `${cookie.cookie}${cookie.email ? `|${cookie.email}` : ''}`
           )
         }
@@ -82,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-async function getList(id: string, res: NextApiResponse) {
+async function getList(id: string, req: NextApiRequest, res: NextApiResponse) {
   try {
     const filePath = path.join(LISTS_DIR, `${id}.txt`)
 
@@ -92,13 +106,25 @@ async function getList(id: string, res: NextApiResponse) {
 
     const stats = fs.statSync(filePath)
     const content = fs.readFileSync(filePath, "utf-8")
-    const accounts = content.split("\n").filter(Boolean)
-
+    const allAccounts = content.split("\n").filter(Boolean)
+    
+    const page = parseInt(req.query.page as string) || 1
+    const pageSize = parseInt(req.query.pageSize as string) || 10000
+    const start = (page - 1) * pageSize
+    const end = start + pageSize
+    const accounts = allAccounts.slice(start, end)
+    
     return res.status(200).json({
       id,
       name: id,
       createdAt: stats.birthtime,
-      accounts
+      accounts,
+      pagination: {
+        total: allAccounts.length,
+        page,
+        pageSize,
+        hasMore: end < allAccounts.length
+      }
     })
   } catch (error) {
     console.error("Error reading list:", error)

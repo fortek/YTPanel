@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Check, Loader2, Play, Square } from "lucide-react"
@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { FixedSizeList as List } from "react-window"
 import AutoSizer from "react-virtualized-auto-sizer"
 import { useProxy } from "@/contexts/ProxyContext"
+import { useAccountLists } from "@/contexts/AccountListsContext"
 
 interface Account {
   id: number
@@ -28,6 +29,7 @@ const ITEM_SIZE = 56
 
 export function AccountsList({ accounts }: AccountsListProps) {
   const { proxy } = useProxy()
+  const { loadMoreAccounts, activeListId, activeList, isLoading } = useAccountLists()
   const [accountsState, setAccountsState] = useState<Account[]>(
     accounts.map((line, index) => {
       const [cookies, email] = line.split("|")
@@ -35,13 +37,93 @@ export function AccountsList({ accounts }: AccountsListProps) {
         id: index,
         cookies: cookies.trim(),
         email: email ? email.trim() : "",
-        status: "pending"
+        status: "pending" as const
       }
     })
   )
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isCheckingAll, setIsCheckingAll] = useState(false)
   const stopCheckingRef = useRef(false)
   const listRef = useRef<List>(null)
+  const loadingRef = useRef(false)
+
+  useEffect(() => {
+    if (!activeList?.accounts) return
+    
+    if (!accountsState.length) {
+      setAccountsState(activeList.accounts.map((line, index) => {
+        const [cookies, email] = line.split("|")
+        return {
+          id: index,
+          cookies: cookies.trim(),
+          email: email ? email.trim() : "",
+          status: "pending" as const
+        }
+      }))
+      return
+    }
+
+    // Добавляем только новые аккаунты, сохраняя состояние существующих
+    const currentIds = new Set(accountsState.map(acc => acc.cookies))
+    const newAccounts = activeList.accounts
+      .filter(line => {
+        const [cookies] = line.split("|")
+        return !currentIds.has(cookies.trim())
+      })
+      .map((line, index) => {
+        const [cookies, email] = line.split("|")
+        return {
+          id: accountsState.length + index,
+          cookies: cookies.trim(),
+          email: email ? email.trim() : "",
+          status: "pending" as const
+        }
+      })
+
+    if (newAccounts.length) {
+      setAccountsState(prev => [...prev, ...newAccounts])
+    }
+  }, [activeList?.accounts])
+
+  const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: { scrollOffset: number, scrollUpdateWasRequested: boolean }) => {
+    if (scrollUpdateWasRequested || isLoadingMore) return
+    
+    const { height, itemCount, itemSize } = listRef.current?.props || {}
+    if (!height || !itemCount || !itemSize) return
+    
+    const threshold = 100
+    const isNearBottom = scrollOffset + Number(height) >= Number(itemCount) * Number(itemSize) - threshold
+    
+    if (isNearBottom && !loadingRef.current && activeListId && activeList?.pagination?.hasMore) {
+      loadingRef.current = true
+      setIsLoadingMore(true)
+      
+      loadMoreAccounts(activeListId)
+        .then((newAccounts) => {
+          if (!newAccounts?.length) return
+          
+          setAccountsState(prev => {
+            const startIndex = prev.length
+            return [
+              ...prev,
+              ...newAccounts.map((line: string, index: number) => {
+                const [cookies, email] = line.split("|")
+                return {
+                  id: startIndex + index,
+                  cookies: cookies.trim(),
+                  email: email ? email.trim() : "",
+                  status: "pending" as const
+                }
+              })
+            ]
+          })
+        })
+        .finally(() => {
+          loadingRef.current = false
+          setIsLoadingMore(false)
+        })
+    }
+  }, [activeListId, loadMoreAccounts, isLoadingMore, activeList?.pagination?.hasMore])
 
   const checkAccount = async (id: number) => {
     if (stopCheckingRef.current) return false
@@ -217,7 +299,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
       <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-6">
         <div>
           <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            Accounts List ({accountsState.length})
+            Accounts List ({activeList?.total || 0})
           </CardTitle>
           <div className="mt-2 text-sm flex gap-4">
             <span className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-300 font-medium">
@@ -267,15 +349,26 @@ export function AccountsList({ accounts }: AccountsListProps) {
           <div className="h-[600px]">
             <AutoSizer>
               {({ height, width }) => (
-                <List
-                  ref={listRef}
-                  height={height}
-                  itemCount={accountsState.length}
-                  itemSize={ITEM_SIZE}
-                  width={width}
-                >
-                  {Row}
-                </List>
+                <div className="ReactWindow__ScrollContainer">
+                  <List
+                    ref={listRef}
+                    height={height}
+                    itemCount={accountsState.length}
+                    itemSize={ITEM_SIZE}
+                    width={width}
+                    onScroll={handleScroll}
+                  >
+                    {({ index, style }) => <Row index={index} style={style} />}
+                  </List>
+                  {isLoadingMore && (
+                    <div className="absolute bottom-2 right-4 flex items-center justify-center">
+                      <div className="flex items-center gap-1.5 text-xs text-zinc-500 bg-white dark:bg-zinc-900 px-2 py-1 rounded-md shadow-sm">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Loading...
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </AutoSizer>
           </div>

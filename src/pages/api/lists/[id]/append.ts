@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import fs from "fs"
-import path from "path"
+import { saveCookiesToRedis } from "@/lib/redis-utils"
+import redisClient, { ensureConnection } from "@/lib/redis"
 
 export const config = {
   api: {
@@ -10,8 +10,6 @@ export const config = {
     },
   },
 }
-
-const LISTS_DIR = path.join(process.cwd(), "uploaded_cookies")
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -29,33 +27,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const fileName = `${id}.txt`
-    const filePath = path.join(LISTS_DIR, fileName)
-    const cleanFileName = `${id}_clean.txt`
-    const cleanFilePath = path.join(LISTS_DIR, cleanFileName)
-
-    if (!fs.existsSync(filePath)) {
+    await ensureConnection()
+    
+    // Проверяем существование списка
+    const listKey = `list:${id}`
+    const listExists = await redisClient.exists(listKey)
+    
+    if (!listExists) {
       return res.status(404).json({ error: "List not found" })
     }
 
-    // Читаем существующие аккаунты
-    const existingContent = fs.readFileSync(filePath, "utf-8")
-    const existingAccounts = existingContent.split("\n").filter(line => line.trim())
+    // Получаем текущий total
+    const currentTotal = await redisClient.hGet(listKey, 'total')
+    if (!currentTotal) {
+      return res.status(500).json({ error: "Invalid list state" })
+    }
 
-    // Добавляем новые аккаунты
-    const updatedAccounts = [...existingAccounts, ...accounts]
-    fs.writeFileSync(filePath, updatedAccounts.join("\n"), "utf-8")
+    const startIndex = parseInt(currentTotal)
+    const pipeline = redisClient.multi()
 
-    // Обновляем чистый файл
-    const cleanAccounts = updatedAccounts.map(account => {
-      const [cookies] = account.split("|")
-      return cookies.trim()
+    // Добавляем новые записи
+    for (let i = 0; i < accounts.length; i++) {
+      const [cookie, email] = accounts[i].split("|")
+      const cookieKey = `cookies:${id}:${startIndex + i}`
+      
+      pipeline.hSet(cookieKey, {
+        index: (startIndex + i).toString(),
+        email: email ? email.trim() : 'null',
+        cookie: cookie.trim()
+      })
+    }
+
+    // Обновляем total
+    pipeline.hSet(listKey, 'total', (startIndex + accounts.length).toString())
+
+    // Выполняем все операции
+    await pipeline.exec()
+
+    return res.status(200).json({ 
+      success: true,
+      message: `Added ${accounts.length} accounts to list ${id}`,
+      total: startIndex + accounts.length
     })
-    fs.writeFileSync(cleanFilePath, cleanAccounts.join("\n"), "utf-8")
-
-    return res.status(200).json({ success: true })
   } catch (error) {
     console.error("Error appending to list:", error)
-    return res.status(500).json({ error: "Failed to append to list" })
+    return res.status(500).json({ error: "Failed to append accounts to list" })
   }
 } 

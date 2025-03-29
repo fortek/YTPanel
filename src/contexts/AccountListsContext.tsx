@@ -5,6 +5,13 @@ interface AccountList {
   name: string
   totalCookies: number
   createdAt: string
+  accounts?: string[]
+  total: number
+  pagination?: {
+    page: number
+    pageSize: number
+    hasMore: boolean
+  }
 }
 
 interface AccountListsContextType {
@@ -17,6 +24,7 @@ interface AccountListsContextType {
   removeList: (id: string) => Promise<void>
   renameList: (id: string, newName: string) => Promise<void>
   downloadList: (id: string) => Promise<void>
+  loadMoreAccounts: (id: string) => Promise<string[] | undefined>
   isLoading: boolean
   error: string | null
 }
@@ -49,12 +57,10 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const loadListContent = async (id: string) => {
+  const loadListContent = async (id: string, page: number = 1) => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/lists/${id}`, {
-        method: "GET"
-      })
+      const response = await fetch(`/api/lists/${id}?page=${page}&pageSize=10000`)
       if (!response.ok) {
         throw new Error("Failed to load list content")
       }
@@ -65,10 +71,25 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
         createdAt: new Date(data.createdAt)
       }
       
-      setActiveList(updatedList)
-      setLists(prev => prev.map(list => 
-        list.id === id ? { ...list, accounts: updatedList.accounts } : list
-      ))
+      if (page === 1) {
+        setActiveList(updatedList)
+        setLists(prev => prev.map(list => 
+          list.id === id ? { ...list, accounts: updatedList.accounts, pagination: updatedList.pagination } : list
+        ))
+      } else {
+        setActiveList(prev => prev ? {
+          ...prev,
+          accounts: [...(prev.accounts || []), ...(updatedList.accounts || [])],
+          pagination: updatedList.pagination
+        } : null)
+        setLists(prev => prev.map(list => 
+          list.id === id ? {
+            ...list,
+            accounts: [...(list.accounts || []), ...(updatedList.accounts || [])],
+            pagination: updatedList.pagination
+          } : list
+        ))
+      }
     } catch (error) {
       console.error("Error loading list content:", error)
       setError("Failed to load list content")
@@ -90,41 +111,69 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     try {
       const chunkSize = 1000 // Размер чанка в строках
       const chunks = []
+      let newList = null
       
       // Разбиваем массив на чанки
       for (let i = 0; i < accounts.length; i += chunkSize) {
         chunks.push(accounts.slice(i, i + chunkSize))
       }
       
-      // Create a list with an empty accounts array
-      const response = await fetch("/api/lists", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, accounts: [] })
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create list")
-      }
-      
-      const newList = await response.json()
-      const listWithDate = { 
-        ...newList, 
-        createdAt: new Date(newList.createdAt),
-        accounts: []
-      }
-      setLists(prev => [...prev, listWithDate])
-
-      // Отправляем каждый чанк отдельно
-      for (let i = 0; i < chunks.length; i++) {
-        const chunkResponse = await fetch(`/api/lists/${newList.id}/append`, {
+      try {
+        // Create a list with an empty accounts array
+        const response = await fetch("/api/lists", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accounts: chunks[i] })
+          body: JSON.stringify({ name, accounts: [] })
         })
 
-        if (!chunkResponse.ok) {
-          throw new Error(`Failed to append chunk ${i + 1}`)
+        if (!response.ok) {
+          throw new Error("Failed to create list")
+        }
+        
+        newList = await response.json()
+        const listWithDate = { 
+          ...newList, 
+          createdAt: new Date(newList.createdAt),
+          accounts: []
+        }
+        setLists(prev => [...prev, listWithDate])
+      } catch (error) {
+        console.error("Error creating initial list:", error)
+        throw new Error("Failed to create initial list")
+      }
+
+      // Отправляем каждый чанк отдельно с повторными попытками
+      for (let i = 0; i < chunks.length; i++) {
+        let retries = 3
+        let success = false
+
+        while (retries > 0 && !success) {
+          try {
+            const chunkResponse = await fetch(`/api/lists/${newList.id}/append`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ accounts: chunks[i] })
+            })
+
+            if (!chunkResponse.ok) {
+              const errorData = await chunkResponse.json()
+              throw new Error(errorData.error || `Failed to append chunk ${i + 1}`)
+            }
+
+            success = true
+          } catch (error) {
+            console.error(`Error uploading chunk ${i + 1}, attempt ${4 - retries}:`, error)
+            retries--
+            
+            if (retries === 0) {
+              // Если все попытки исчерпаны, удаляем список и выбрасываем ошибку
+              await removeList(newList.id)
+              throw new Error(`Failed to upload chunk ${i + 1} after multiple attempts`)
+            }
+            
+            // Ждем перед следующей попыткой
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
         }
       }
 
@@ -195,6 +244,36 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const loadMoreAccounts = async (id: string) => {
+    const list = lists.find(l => l.id === id)
+    if (!list?.pagination?.hasMore) return undefined
+    
+    try {
+      const nextPage = activeList?.pagination?.page ? activeList.pagination.page + 1 : 1
+      const response = await fetch(`/api/lists/${id}?page=${nextPage}&pageSize=10000`)
+      if (!response.ok) {
+        throw new Error("Failed to load more accounts")
+      }
+      
+      const data = await response.json()
+      
+      // Обновляем состояние списка с новой пагинацией
+      setActiveList(prev => {
+        if (!prev) return data
+        return {
+          ...prev,
+          accounts: [...(prev.accounts || []), ...(data.accounts || [])],
+          pagination: data.pagination
+        }
+      })
+      
+      return data.accounts as string[]
+    } catch (error) {
+      console.error("Error loading more accounts:", error)
+      return undefined
+    }
+  }
+
   return (
     <AccountListsContext.Provider 
       value={{ 
@@ -207,6 +286,7 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
         removeList,
         renameList,
         downloadList,
+        loadMoreAccounts,
         isLoading,
         error
       }}
