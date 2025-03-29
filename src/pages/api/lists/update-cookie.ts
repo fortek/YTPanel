@@ -8,20 +8,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Логируем данные запроса
-    console.log("Update Cookie Request:", {
-      method: req.method,
-      url: req.url,
-      body: {
-        list: req.body.list,
-        newCookie: req.body.newCookie ? `[length: ${req.body.newCookie.length}]` : undefined,
-        email: req.body.email
-      },
-      headers: {
-        "content-type": req.headers["content-type"],
-        "user-agent": req.headers["user-agent"]
-      }
-    })
+    // Логируем только тело запроса
+    console.log(`Update Cookie Request: list=${req.body.list}, email=${req.body.email}, cookieLength=${req.body.newCookie?.length || 0}`)
 
     const isConnected = await ensureConnection()
     if (!isConnected) {
@@ -32,11 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { list, newCookie, email } = req.body
 
     if (!list || !newCookie || !email) {
-      console.warn("Missing required fields:", { 
-        list, 
-        newCookie: newCookie ? `[length: ${newCookie.length}]` : undefined, 
-        email 
-      })
+      console.warn(`Missing required fields: list=${list}, email=${email}, cookieLength=${newCookie?.length || 0}`)
       return res.status(400).json({ 
         error: "Missing required parameters",
         details: {
@@ -52,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const listInfo = await redisClient.hGetAll(listKey)
     
     if (!listInfo || !listInfo.total) {
-      console.warn("List not found:", { listKey })
+      console.warn(`List not found: ${listKey}`)
       return res.status(404).json({ error: "List not found" })
     }
 
@@ -71,30 +55,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           email: email
         })
         found = true
-        console.log("Cookie updated successfully:", { 
-          cookieKey, 
-          email,
-          cookieLength: newCookie.length
-        })
+        // Логируем успешное обновление в одной строке
+        console.log(`Cookie updated: list=${list}, email=${email}, cookieLength=${newCookie.length}, key=${cookieKey}`)
         break
       }
     }
 
     if (!found) {
-      console.warn("Email not found in list:", { list, email })
+      console.warn(`Email not found in list: list=${list}, email=${email}`)
       return res.status(404).json({ error: "Email not found in list" })
     }
-
-    // Логируем успешный ответ
-    console.log("Update Cookie Response:", {
-      status: 200,
-      message: "Cookie updated successfully",
-      data: {
-        list,
-        email,
-        cookieLength: newCookie.length
-      }
-    })
 
     return res.status(200).json({ message: "Cookie updated successfully" })
   } catch (error) {
