@@ -14,9 +14,29 @@ export default function UploadedCookies() {
     setMounted(true)
   }, [])
 
-  const handleCopyUrl = (url: string) => {
-    navigator.clipboard.writeText(url)
-    toast.success("URL copied to clipboard")
+  const handleCopyUrl = async (url: string) => {
+    try {
+      if (typeof window === 'undefined' || !navigator.clipboard) {
+        throw new Error('Clipboard API not available')
+      }
+      
+      await navigator.clipboard.writeText(url)
+      toast.success("URL copied to clipboard")
+    } catch (error) {
+      console.error('Failed to copy:', error)
+      // Fallback для старых браузеров
+      const textarea = document.createElement('textarea')
+      textarea.value = url
+      document.body.appendChild(textarea)
+      textarea.select()
+      try {
+        document.execCommand('copy')
+        toast.success("URL copied to clipboard")
+      } catch (err) {
+        toast.error("Failed to copy URL")
+      }
+      document.body.removeChild(textarea)
+    }
   }
 
   if (!mounted) {
