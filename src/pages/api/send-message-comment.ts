@@ -6,16 +6,42 @@ import crypto from "crypto"
 const ORIGIN = "https://www.youtube.com"
 const API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
 
-function createSapisidHash(cookie: string): string | null {
+async function getUserId(cookie: string, proxy?: string): Promise<string> {
+  let agent = undefined
+  if (proxy) {
+    const [ip, port, login, password] = proxy.split(":")
+    const proxyUrl = `http://${login}:${password}@${ip}:${port}`
+    agent = new HttpsProxyAgent(proxyUrl)
+  }
+
+  const response = await fetch("https://www.youtube.com/account", {
+    headers: {
+      Cookie: cookie,
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    },
+    agent
+  })
+
+  const html = await response.text()
+  const match = html.match(/"USER_SESSION_ID":\s*"(\d+)"/)
+  
+  if (!match) {
+    throw new Error("User ID not found")
+  }
+
+  return match[1]
+}
+
+function createSapisidHash(cookie: string, userid: string): string | null {
   const sapisidMatch = cookie.match(/SAPISID=(\S+?);/)
   if (!sapisidMatch) return null
 
   const sapisid = sapisidMatch[1]
   const timestamp = Math.floor(Date.now() / 1000)
-  const strToHash = `${timestamp} ${sapisid} ${ORIGIN}`
+  const strToHash = `${userid} ${timestamp} ${sapisid} ${ORIGIN}`
   const hash = crypto.createHash("sha1").update(strToHash).digest("hex")
 
-  return `SAPISIDHASH ${timestamp}_${hash}`
+  return `SAPISIDHASH ${timestamp}_${hash}_u`
 }
 
 async function getCommentParams(
@@ -23,7 +49,7 @@ async function getCommentParams(
   sapisidhash: string,
   token: string,
   proxy?: string
-): Promise<{ createCommentParams: string; pageId: string }> {
+): Promise<{ createCommentParams: string }> {
   let agent = undefined
   if (proxy) {
     const [ip, port, login, password] = proxy.split(":")
@@ -35,64 +61,52 @@ async function getCommentParams(
     context: {
       client: {
         clientName: "WEB",
-        clientVersion: "2.20231106.07.00"
+        clientVersion: "2.20250417.01.00"
       }
     },
     continuation: token
   }
 
-  const response = await fetch(
-    `https://www.youtube.com/youtubei/v1/next?key=${API_KEY}&prettyPrint=false`,
-    {
-      method: "POST",
-      headers: {
-        Cookie: cookie,
-        Authorization: sapisidhash,
-        "X-Origin": ORIGIN,
-        "Content-Type": "text/plain"
-      },
-      body: JSON.stringify(postData),
-      agent
-    }
-  )
+  const url = `https://www.youtube.com/youtubei/v1/next?key=${API_KEY}&prettyPrint=false`
+  console.log("Request URL:", url)
+  console.log("Request Headers:", {
+    Cookie: cookie,
+    Authorization: sapisidhash,
+    "X-Origin": ORIGIN,
+    "Content-Type": "text/plain"
+  })
+  console.log("Request Body:", JSON.stringify(postData))
 
-  const data = await response.json()
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Cookie: cookie,
+      Authorization: sapisidhash,
+      "X-Origin": ORIGIN,
+      "Content-Type": "text/plain"
+    },
+    body: JSON.stringify(postData),
+    agent
+  })
+
+  const responseText = await response.text()
   
-  // Ищем createCommentParams в ответе
-  let createCommentParams = null
-  const findCreateCommentParams = (obj: any) => {
-    if (obj?.createCommentParams) {
-      createCommentParams = obj.createCommentParams
-      return true
-    }
-    if (typeof obj === "object") {
-      for (const key in obj) {
-        if (findCreateCommentParams(obj[key])) return true
-      }
-    }
-    return false
-  }
-  findCreateCommentParams(data)
-
-  if (!createCommentParams) {
+  // Ищем createCommentParams в тексте ответа
+  const createCommentParamsMatch = responseText.match(/"createCommentParams":"([^"]+)"/)
+  if (!createCommentParamsMatch) {
     throw new Error("Create comment params not found")
   }
-
-  // Ищем pageId в ответе
-  const responseText = await response.text()
-  const pageIdMatch = responseText.match(/datasyncId":"([^"]+)\|\|/)
-  const pageId = pageIdMatch ? pageIdMatch[1] : "pageid not found"
+  const createCommentParams = createCommentParamsMatch[1]
 
   return {
-    createCommentParams,
-    pageId
+    createCommentParams
   }
 }
 
 async function sendComment(
   cookie: string,
   sapisidhash: string,
-  pageId: string,
+  userid: string,
   createCommentParams: string,
   word: string,
   proxy?: string
@@ -130,7 +144,7 @@ async function sendComment(
     }
   )
 
-  return `Send (${pageId}) (${createCommentParams}) (${sapisidhash})`
+  return `Send (${userid}) (${createCommentParams}) (${sapisidhash})`
 }
 
 async function getCommentId(videoId: string, proxy?: string): Promise<string> {
@@ -191,17 +205,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       commentToken = await getCommentId(videoId, proxy)
     }
 
-    const sapisidhash = createSapisidHash(cookie)
+    const userid = await getUserId(cookie, proxy)
+    const sapisidhash = createSapisidHash(cookie, userid)
     if (!sapisidhash) {
       return res.status(400).json({ error: "SAPISID cookie not found" })
     }
 
-    const { createCommentParams, pageId } = await getCommentParams(cookie, sapisidhash, commentToken, proxy)
-    const response = await sendComment(cookie, sapisidhash, pageId, createCommentParams, word, proxy)
+    const { createCommentParams } = await getCommentParams(cookie, sapisidhash, commentToken, proxy)
+    const response = await sendComment(cookie, sapisidhash, userid, createCommentParams, word, proxy)
 
     console.log("Comment sent successfully:", {
       word,
-      pageId,
       proxy: proxy ? "used" : "not used"
     })
 
