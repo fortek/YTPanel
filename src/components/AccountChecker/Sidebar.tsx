@@ -139,7 +139,7 @@ export function Sidebar() {
                   <div
                     key={list.id}
                     className={cn(
-                      "flex items-center justify-between px-4 py-2 rounded-md transition-colors hover:bg-zinc-800/50 cursor-pointer group",
+                      "flex flex-col px-4 py-2 rounded-md transition-colors hover:bg-zinc-800/50 cursor-pointer group",
                       activeListId === list.id && "bg-zinc-800/30 ring-1 ring-zinc-700/50"
                     )}
                     onClick={() => handleListSelect(list.id)}
@@ -153,8 +153,7 @@ export function Sidebar() {
                         {formatDistanceToNow(list.createdAt, { addSuffix: true })}
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3 mt-2">
                       <Button
                         variant="ghost"
                         size="icon"
