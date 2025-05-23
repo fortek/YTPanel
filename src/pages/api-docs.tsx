@@ -348,6 +348,62 @@ export default function ApiDocsPage() {
       }
     },
     {
+      title: "Add Cookie",
+      method: "POST",
+      path: "/api/lists/add-cookie",
+      description: "Add a new cookie and email pair to the specified list.",
+      requestBody: {
+        list: "List name",
+        cookie: "Cookie value",
+        email: "Email to add"
+      },
+      responses: {
+        200: {
+          status: 200,
+          body: {
+            message: "Cookie added successfully"
+          }
+        },
+        errors: [
+          {
+            status: 400,
+            body: {
+              message: "Missing required parameters"
+            }
+          },
+          {
+            status: 404,
+            body: {
+              message: "List not found"
+            }
+          },
+          {
+            status: 500,
+            body: {
+              message: "Failed to add cookie"
+            }
+          }
+        ]
+      },
+      example: {
+        request: {
+          method: "POST",
+          url: "/api/lists/add-cookie",
+          body: {
+            list: "example_list",
+            cookie: "cookie_value",
+            email: "user@example.com"
+          }
+        },
+        response: {
+          status: 200,
+          body: {
+            message: "Cookie added successfully"
+          }
+        }
+      }
+    },
+    {
       title: "List Files",
       method: "GET",
       path: "/api/files",
