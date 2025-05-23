@@ -24,7 +24,7 @@ interface FileUploadProps {
 }
 
 export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true, onSuccess }: FileUploadProps) {
-  const { lists, setLists } = useAccountLists()
+  const { lists, setLists, loadListNames } = useAccountLists()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listName, setListName] = useState("")
@@ -188,8 +188,7 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
 
           if (currentChunk < totalChunks) {
             readNextChunk();
-          } else if (data.isComplete) {
-            // Загрузка завершена успешно
+          } else {
             setUploadProgress(100);
             setListName("");
             setSelectedFile(null);
@@ -197,20 +196,9 @@ export function FileUpload({ onFileSelect, accept = ".txt", showNameInput = true
             if (fileInputRef.current) {
               fileInputRef.current.value = "";
             }
-
-            // Обновляем список после успешной загрузки
-            if (onSuccess) {
-              onSuccess();
+            if (loadListNames) {
+              await loadListNames();
             }
-
-            // Добавляем новый список в контекст
-            const newList = {
-              id: data.id,
-              name: listName.trim(),
-              totalCookies: data.total,
-              createdAt: new Date().toISOString()
-            };
-            setLists([newList, ...lists]);
           }
         } catch (err) {
           console.error("Chunk upload error:", err);

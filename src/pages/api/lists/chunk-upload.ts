@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import { saveCookiesToRedis } from "@/lib/redis-utils"
-import redisClient, { ensureConnection } from "@/lib/redis"
+import { pool } from "@/lib/mysql-config"
 
 export const config = {
   api: {
@@ -11,33 +10,88 @@ export const config = {
   },
 }
 
-const CHUNK_TTL = 3600 // 1 час
-const MAX_RETRIES = 3
-const RETRY_DELAY = 1000 // 1 секунда
-
-async function saveChunkWithRetry(key: string, value: string, retries = MAX_RETRIES): Promise<boolean> {
+const ensureTablesExist = async () => {
+  const connection = await pool.getConnection()
   try {
-    await redisClient.set(key, value)
-    await redisClient.expire(key, CHUNK_TTL)
-    return true
-  } catch (error) {
-    if (retries > 0) {
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-      return saveChunkWithRetry(key, value, retries - 1)
-    }
-    throw error
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS cookie_lists (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) UNIQUE,
+        total INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS cookies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        list_id INT,
+        email VARCHAR(255),
+        cookie TEXT,
+        FOREIGN KEY (list_id) REFERENCES cookie_lists(id)
+      )
+    `)
+  } finally {
+    connection.release()
   }
 }
 
-async function getChunkWithRetry(key: string, retries = MAX_RETRIES): Promise<string | null> {
+// Сохраняем строки чанка сразу в основную таблицу
+const saveChunkToMySQL = async (name: string, chunk: string, chunkIndex: number, isFirst: boolean) => {
+  const connection = await pool.getConnection()
   try {
-    return await redisClient.get(key)
-  } catch (error) {
-    if (retries > 0) {
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-      return getChunkWithRetry(key, retries - 1)
+    await connection.beginTransaction()
+
+    // Если это первый чанк — удаляем старый список и создаём новый
+    if (isFirst) {
+      const [lists] = await connection.query('SELECT id FROM cookie_lists WHERE name = ?', [name])
+      if ((lists as any[]).length) {
+        const listId = (lists as any[])[0].id
+        await connection.query('DELETE FROM cookies WHERE list_id = ?', [listId])
+        await connection.query('DELETE FROM cookie_lists WHERE id = ?', [listId])
+      }
+      await connection.query('INSERT INTO cookie_lists (name, total) VALUES (?, ?)', [name, 0])
     }
-    throw error
+
+    // Получаем id списка
+    const [lists2] = await connection.query('SELECT id FROM cookie_lists WHERE name = ?', [name])
+    if (!(lists2 as any[]).length) throw new Error('List not found after insert')
+    const listId = (lists2 as any[])[0].id
+
+    // Парсим строки чанка
+    const cookies: string[] = []
+    const emailsArr: (string|null)[] = []
+    const lines = chunk.split('\n').filter((line: string) => line.trim())
+    for (const line of lines) {
+      const [cookie, email] = line.split('|')
+      cookies.push(cookie.trim())
+      emailsArr.push(email ? email.trim() : null)
+    }
+    if (cookies.length) {
+      const values = cookies.map((cookie, i) => [listId, emailsArr[i], cookie])
+      await connection.query('INSERT INTO cookies (list_id, email, cookie) VALUES ?', [values])
+    }
+
+    await connection.commit()
+    return cookies.length
+  } catch (e) {
+    await connection.rollback()
+    throw e
+  } finally {
+    connection.release()
+  }
+}
+
+const updateTotal = async (name: string) => {
+  const connection = await pool.getConnection()
+  try {
+    const [lists] = await connection.query('SELECT id FROM cookie_lists WHERE name = ?', [name])
+    if (!(lists as any[]).length) return
+    const listId = (lists as any[])[0].id
+    const [rows] = await connection.query('SELECT COUNT(*) as cnt FROM cookies WHERE list_id = ?', [listId])
+    const total = (rows as any[])[0].cnt
+    await connection.query('UPDATE cookie_lists SET total = ? WHERE id = ?', [total, listId])
+  } finally {
+    connection.release()
   }
 }
 
@@ -47,118 +101,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    await ensureConnection()
-    
-    const { name, chunk, chunkIndex, totalChunks } = req.body
+    await ensureTablesExist()
+    const { name, chunk, chunkIndex, isLast } = req.body
 
-    if (!name || chunk === undefined || chunkIndex === undefined || !totalChunks) {
+    if (!name || chunk === undefined || chunkIndex === undefined) {
       return res.status(400).json({ error: "Не хватает обязательных параметров" })
     }
 
-    // Проверяем размер чанка
-    if (chunk.length > 50 * 1024 * 1024) { // 50MB
+    if (chunk.length > 50 * 1024 * 1024) {
       return res.status(413).json({ error: "Размер чанка слишком большой" })
     }
 
-    // Проверяем существование списка
-    const listKey = `list:${name}`
-    const listExists = await redisClient.exists(listKey)
-    if (listExists) {
-      return res.status(409).json({ error: "Список с таким именем уже существует" })
+    const isFirst = chunkIndex === 0
+    await saveChunkToMySQL(name, chunk, chunkIndex, isFirst)
+
+    if (isLast) {
+      await updateTotal(name)
+      return res.status(200).json({ message: "Список успешно сохранён" })
     }
 
-    // Сохраняем чанк во временное хранилище Redis
-    const chunkKey = `temp:${name}:chunk:${chunkIndex}`
-    try {
-      const saved = await saveChunkWithRetry(chunkKey, chunk)
-      if (!saved) {
-        throw new Error("Failed to save chunk")
-      }
-    } catch (redisError) {
-      console.error("Redis error:", redisError)
-      return res.status(500).json({ error: "Ошибка сохранения чанка в Redis" })
-    }
-
-    // Если это последний чанк, обрабатываем весь файл
-    if (chunkIndex === totalChunks - 1) {
-      const cookies: string[] = []
-      const emails: (string | null)[] = []
-      const failedChunks: number[] = []
-
-      // Собираем все чанки
-      for (let i = 0; i < totalChunks; i++) {
-        const currentChunkKey = `temp:${name}:chunk:${i}`
-        try {
-          const chunkData = await getChunkWithRetry(currentChunkKey)
-          
-          if (!chunkData) {
-            failedChunks.push(i)
-            continue
-          }
-
-          // Обрабатываем строки из чанка
-          const lines = chunkData.split("\n").filter(line => line.trim())
-          for (const line of lines) {
-            const [cookie, email] = line.split("|")
-            cookies.push(cookie.trim())
-            emails.push(email ? email.trim() : null)
-          }
-
-          // Удаляем обработанный чанк
-          await redisClient.del(currentChunkKey)
-        } catch (error) {
-          console.error(`Error processing chunk ${i}:`, error)
-          failedChunks.push(i)
-        }
-      }
-
-      // Если есть неудачные чанки, возвращаем ошибку
-      if (failedChunks.length > 0) {
-        return res.status(500).json({ 
-          error: "Не удалось обработать все чанки",
-          failedChunks
-        })
-      }
-
-      // Сохраняем в Redis
-      const success = await saveCookiesToRedis({
-        name,
-        cookies,
-        emails
-      })
-
-      if (!success) {
-        throw new Error("Не удалось сохранить cookies в Redis")
-      }
-
-      return res.status(200).json({ 
-        success: true,
-        message: `Список ${name} создан с ${cookies.length} cookies`,
-        total: cookies.length,
-        id: name,
-        isComplete: true
-      })
-    }
-
-    // Если это не последний чанк, просто подтверждаем получение
-    return res.status(200).json({ 
-      success: true,
-      message: `Чанк ${chunkIndex} получен`,
-      isComplete: false
-    })
-
+    return res.status(200).json({ message: "Чанк успешно сохранён" })
   } catch (error) {
-    console.error("Ошибка загрузки:", error)
-    
-    // Очищаем временные данные при ошибке
-    if (req.body?.name) {
-      const pattern = `temp:${req.body.name}:chunk:*`
-      const keys = await redisClient.keys(pattern)
-      if (keys.length > 0) {
-        await redisClient.del(keys)
-      }
-    }
-    
-    return res.status(500).json({ error: "Не удалось загрузить cookies" })
+    console.error("Ошибка загрузки чанка:", error)
+    return res.status(500).json({ error: "Ошибка загрузки чанка" })
   }
 } 

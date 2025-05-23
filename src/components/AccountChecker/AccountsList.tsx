@@ -299,7 +299,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
       <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-6">
         <div>
           <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            Accounts List ({activeList?.total || 0})
+            Accounts List
           </CardTitle>
           <div className="mt-2 text-sm flex gap-4">
             <span className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-300 font-medium">

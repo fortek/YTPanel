@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import { ensureConnection } from "@/lib/redis-utils"
-import redisClient from "@/lib/redis"
+import { pool } from "@/lib/mysql-config"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -21,48 +20,59 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
-    const isConnected = await ensureConnection()
-    if (!isConnected) {
-      return res.status(500).json({ error: "Failed to connect to Redis" })
-    }
+    const connection = await pool.getConnection()
+    
+    try {
+      await connection.beginTransaction()
 
-    const listKey = `list:${list}`
-    const listInfo = await redisClient.hGetAll(listKey)
+      // Получаем ID списка
+      const [lists] = await connection.query(
+        'SELECT id FROM cookie_lists WHERE name = ?',
+        [list]
+      )
 
-    if (!listInfo || !listInfo.total) {
-      return res.status(404).json({ error: "List not found" })
-    }
-
-    const total = parseInt(listInfo.total)
-    let found = false
-
-    for (let i = 0; i < total; i++) {
-      const cookieKey = `cookies:${list}:${i}`
-      const cookieData = await redisClient.hGetAll(cookieKey)
-      if (cookieData.email === email) {
-        await redisClient.hSet(cookieKey, {
-          cookie: cookie,
-          email: email
-        })
-        found = true
-        break
+      if (!(lists as any[]).length) {
+        return res.status(404).json({ error: "List not found" })
       }
+
+      const listId = (lists as any[])[0].id
+
+      // Проверяем существование email
+      const [existing] = await connection.query(
+        'SELECT id FROM cookies WHERE list_id = ? AND email = ?',
+        [listId, email]
+      )
+
+      if ((existing as any[]).length > 0) {
+        // Обновляем существующую запись
+        await connection.query(
+          'UPDATE cookies SET cookie = ? WHERE list_id = ? AND email = ?',
+          [cookie, listId, email]
+        )
+      } else {
+        // Добавляем новую запись
+        await connection.query(
+          'INSERT INTO cookies (list_id, email, cookie) VALUES (?, ?, ?)',
+          [listId, email, cookie]
+        )
+
+        // Обновляем счетчик в списке
+        await connection.query(
+          'UPDATE cookie_lists SET total = total + 1 WHERE id = ?',
+          [listId]
+        )
+      }
+
+      await connection.commit()
+      return res.status(200).json({ message: "Cookie added successfully" })
+    } catch (error) {
+      await connection.rollback()
+      throw error
+    } finally {
+      connection.release()
     }
-
-    if (found) {
-      return res.status(200).json({ message: "Cookie updated for existing email" })
-    }
-
-    const newCookieKey = `cookies:${list}:${total}`
-    await redisClient.hSet(newCookieKey, {
-      cookie: cookie,
-      email: email
-    })
-    await redisClient.hSet(listKey, { total: total + 1 })
-
-    return res.status(200).json({ message: "Cookie added successfully" })
   } catch (error) {
-    console.error("Error adding/updating cookie:", error)
-    return res.status(500).json({ error: "Failed to add or update cookie" })
+    console.error("Error adding cookie:", error)
+    return res.status(500).json({ error: "Failed to add cookie" })
   }
 } 

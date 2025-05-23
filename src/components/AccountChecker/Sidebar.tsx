@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAccountLists } from "@/contexts/AccountListsContext"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNow, parseISO, isValid } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Pencil, Trash2, Download, Loader2, Network, RefreshCw, FileText, FileDown } from "lucide-react"
@@ -136,78 +136,81 @@ export function Sidebar() {
           </div>
           <ScrollArea className="flex-1 h-0">
             <div className="space-y-1">
-              {lists.map((list) => (
-                <div
-                  key={list.id}
-                  className={cn(
-                    "flex flex-col px-4 py-2 rounded-md transition-colors hover:bg-zinc-800/50 cursor-pointer group",
-                    activeListId === list.id && "bg-zinc-800/30 ring-1 ring-zinc-700/50"
-                  )}
-                  onClick={() => handleListSelect(list.id)}
-                >
-                  <div className="flex-1">
-                    <div className="font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      {list.name}
+              {lists.map((list) => {
+                const date = list.createdAt ? parseISO(list.createdAt) : null;
+                return (
+                  <div
+                    key={list.id}
+                    className={cn(
+                      "flex flex-col px-4 py-2 rounded-md transition-colors hover:bg-zinc-800/50 cursor-pointer group",
+                      activeListId === list.id && "bg-zinc-800/30 ring-1 ring-zinc-700/50"
+                    )}
+                    onClick={() => handleListSelect(list.id)}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        {list.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {date && isValid(date) ? formatDistanceToNow(date, { addSuffix: true }) : ''}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(list.createdAt, { addSuffix: true })}
+                    <div className="flex items-center gap-3 mt-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openRenameDialog(list.id, list.name)
+                        }}
+                        disabled={renamingListId === list.id}
+                        className="h-8 w-8"
+                        title="Rename list"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownload(list.id)
+                        }}
+                        disabled={downloadingListId === list.id}
+                        className="h-8 w-8"
+                        title="Download list"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownloadWithoutEmail(list.id)
+                        }}
+                        className="h-8 w-8"
+                        title="Download without email"
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeList(list.id)
+                        }}
+                        className="h-8 w-8"
+                        title="Remove list"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openRenameDialog(list.id, list.name)
-                      }}
-                      disabled={renamingListId === list.id}
-                      className="h-8 w-8"
-                      title="Rename list"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDownload(list.id)
-                      }}
-                      disabled={downloadingListId === list.id}
-                      className="h-8 w-8"
-                      title="Download list"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDownloadWithoutEmail(list.id)
-                      }}
-                      className="h-8 w-8"
-                      title="Download without email"
-                    >
-                      <FileDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeList(list.id)
-                      }}
-                      className="h-8 w-8"
-                      title="Remove list"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </ScrollArea>
         </div>

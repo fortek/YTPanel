@@ -27,6 +27,7 @@ interface AccountListsContextType {
   loadMoreAccounts: (id: string) => Promise<string[] | undefined>
   isLoading: boolean
   error: string | null
+  loadListNames: () => Promise<void>
 }
 
 const AccountListsContext = createContext<AccountListsContextType | undefined>(undefined)
@@ -189,18 +190,16 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`/api/lists/${id}`, {
         method: "DELETE"
       });
-
       const data = await response.json();
-      
       if (!response.ok) {
         throw new Error(data.error || "Failed to delete list");
       }
-
       setLists(prev => prev.filter(list => list.id !== id));
       if (activeListId === id) {
         setActiveListId(null);
         setActiveList(null);
       }
+      await loadListNames();
     } catch (error) {
       console.error("Error removing list:", error);
       throw error;
@@ -220,17 +219,17 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
       }
 
       const updatedList = await response.json()
-      
       // Обновляем id и name в списках
       setLists(prev => prev.map(list => 
         list.id === id ? { ...list, id: newName, name: newName } : list
       ))
-
       // Обновляем активный список если он был переименован
       if (activeList?.id === id) {
         setActiveList(prev => prev ? { ...prev, id: newName, name: newName } : null)
         setActiveListId(newName)
       }
+      // Обновляем списки в сайдбаре
+      await loadListNames();
     } catch (error) {
       console.error("Error renaming list:", error)
       throw error
@@ -293,7 +292,8 @@ export function AccountListsProvider({ children }: { children: ReactNode }) {
         downloadList,
         loadMoreAccounts,
         isLoading,
-        error
+        error,
+        loadListNames
       }}
     >
       {children}
