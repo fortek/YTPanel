@@ -34,18 +34,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const total = parseInt(listInfo.total)
-    const newCookieKey = `cookies:${list}:${total}`
+    let found = false
 
+    for (let i = 0; i < total; i++) {
+      const cookieKey = `cookies:${list}:${i}`
+      const cookieData = await redisClient.hGetAll(cookieKey)
+      if (cookieData.email === email) {
+        await redisClient.hSet(cookieKey, {
+          cookie: cookie,
+          email: email
+        })
+        found = true
+        break
+      }
+    }
+
+    if (found) {
+      return res.status(200).json({ message: "Cookie updated for existing email" })
+    }
+
+    const newCookieKey = `cookies:${list}:${total}`
     await redisClient.hSet(newCookieKey, {
       cookie: cookie,
       email: email
     })
-
     await redisClient.hSet(listKey, { total: total + 1 })
 
     return res.status(200).json({ message: "Cookie added successfully" })
   } catch (error) {
-    console.error("Error adding cookie:", error)
-    return res.status(500).json({ error: "Failed to add cookie" })
+    console.error("Error adding/updating cookie:", error)
+    return res.status(500).json({ error: "Failed to add or update cookie" })
   }
 } 
