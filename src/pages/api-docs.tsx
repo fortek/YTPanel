@@ -351,19 +351,27 @@ export default function ApiDocsPage() {
       title: "Add Cookie",
       method: "POST",
       path: "/api/lists/add-cookie",
-      description: "Add a new cookie and email pair to the specified list.",
+      description: "Add a new cookie and email pair to the specified list. If the email already exists, the cookie will be updated for that email.",
       requestBody: {
         list: "List name",
         cookie: "Cookie value",
-        email: "Email to add"
+        email: "Email to add or update"
       },
       responses: {
-        200: {
-          status: 200,
-          body: {
-            message: "Cookie added successfully"
+        200: [
+          {
+            status: 200,
+            body: {
+              message: "Cookie added successfully"
+            }
+          },
+          {
+            status: 200,
+            body: {
+              message: "Cookie updated for existing email"
+            }
           }
-        },
+        ],
         errors: [
           {
             status: 400,
@@ -380,7 +388,7 @@ export default function ApiDocsPage() {
           {
             status: 500,
             body: {
-              message: "Failed to add cookie"
+              message: "Failed to add or update cookie"
             }
           }
         ]
@@ -399,6 +407,12 @@ export default function ApiDocsPage() {
           status: 200,
           body: {
             message: "Cookie added successfully"
+          }
+        },
+        responseIfUpdated: {
+          status: 200,
+          body: {
+            message: "Cookie updated for existing email"
           }
         }
       }
